@@ -77,11 +77,11 @@
 	 * Running checks
 	 * --------------------------------------------------------------- */
 
-	function runCheck( url ) {
+	function runCheck( url, postId ) {
 		$button.prop( 'disabled', true );
 		setStatus( 'Checking ' + url + '. This takes 5–15 seconds.' );
 
-		request( 'bsgc_run_check', { url: url } )
+		request( 'bsgc_run_check', { url: url, post_id: postId || 0 } )
 			.done( function ( data ) {
 				state.report = data.report;
 				upsertHistoryRow( data.history );
@@ -196,7 +196,7 @@
 					window.print();
 				} ),
 				actionButton( 'Run again', function () {
-					runCheck( r.url );
+					runCheck( r.url, r.post_id );
 				} )
 			)
 		);
@@ -521,5 +521,35 @@
 			var $row = $( this ).closest( 'tr' );
 			deleteReport( parseInt( $row.data( 'id' ), 10 ), $row );
 		} );
+
+		launch( BSGC.launch );
 	} );
+
+	/**
+	 * Arriving from the editor box or admin bar: run a page or open a report.
+	 */
+	function launch( args ) {
+		if ( ! args ) {
+			return;
+		}
+
+		// Drop the query args so a reload doesn't run the check again.
+		if ( window.history && window.history.replaceState ) {
+			window.history.replaceState( null, '', BSGC.pageUrl );
+		}
+
+		if ( args.report ) {
+			viewReport( args.report );
+			return;
+		}
+
+		$input.val( args.url );
+
+		if ( args.autorun ) {
+			runCheck( args.url, args.postId );
+		} else {
+			setStatus( 'That link has expired. Press Run check to check this page.' );
+			$button.trigger( 'focus' );
+		}
+	}
 }( jQuery ) );

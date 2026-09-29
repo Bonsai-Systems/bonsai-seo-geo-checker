@@ -19,6 +19,7 @@ class BSGC_Reports {
 	const META_PERF  = '_bsgc_performance';
 	const META_AI    = '_bsgc_ai';
 	const META_SCORE = '_bsgc_score';
+	const META_POST  = '_bsgc_post_id';
 
 	/**
 	 * Hook in.
@@ -50,10 +51,11 @@ class BSGC_Reports {
 	/**
 	 * Save a new report.
 	 *
-	 * @param array $report Base report from BSGC_Analyser::run().
-	 * @return int|WP_Error Post ID.
+	 * @param array $report  Base report from BSGC_Analyser::run().
+	 * @param int   $post_id Post on this site the checked page belongs to, if any.
+	 * @return int|WP_Error Report ID.
 	 */
-	public static function save( $report ) {
+	public static function save( $report, $post_id = 0 ) {
 		$id = wp_insert_post(
 			array(
 				'post_type'   => self::CPT,
@@ -69,6 +71,11 @@ class BSGC_Reports {
 
 		update_post_meta( $id, self::META_BASE, wp_slash( $report ) );
 		update_post_meta( $id, self::META_SCORE, (int) $report['scores']['overall'] );
+
+		$post_id = absint( $post_id );
+		if ( $post_id && get_post( $post_id ) && self::CPT !== get_post_type( $post_id ) ) {
+			update_post_meta( $id, self::META_POST, $post_id );
+		}
 
 		return $id;
 	}
@@ -114,6 +121,7 @@ class BSGC_Reports {
 		$ai   = get_post_meta( $id, self::META_AI, true );
 
 		$report['id']          = $id;
+		$report['post_id']     = (int) get_post_meta( $id, self::META_POST, true );
 		$report['performance'] = is_array( $perf ) ? array_diff_key( $perf, array( 'checks' => 1 ) ) : array( 'status' => 'none' );
 
 		if ( is_array( $perf ) && ! empty( $perf['checks'] ) ) {
@@ -145,6 +153,30 @@ class BSGC_Reports {
 		);
 
 		return array_map( array( __CLASS__, 'summary' ), $posts );
+	}
+
+	/**
+	 * Most recent report for a post, for the editor sidebar box.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array|null Summary, or null if never checked.
+	 */
+	public static function latest_for_post( $post_id ) {
+		$ids = get_posts(
+			array(
+				'post_type'      => self::CPT,
+				'post_status'    => 'private',
+				'posts_per_page' => 1,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+				'no_found_rows'  => true,
+				'fields'         => 'ids',
+				'meta_key'       => self::META_POST, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- small internal table, one row.
+				'meta_value'     => absint( $post_id ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			)
+		);
+
+		return $ids ? self::summary( $ids[0] ) : null;
 	}
 
 	/**

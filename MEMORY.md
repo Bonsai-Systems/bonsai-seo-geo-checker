@@ -4,7 +4,9 @@ Decisions, gotchas and open items that aren't obvious from the code. Keep entrie
 
 ## Key decisions
 
-- **2026-09-29 — Internal tool only.** Install on one Bonsai/tools site, not client sites. Access is `manage_options`.
+- **2026-09-29 — Internal tool first, client installs allowed.** It started as a single internal install. The editor box/admin bar (added the same day) mean it may now also go on client sites. Access is still `manage_options`.
+- **2026-09-29 — Editor button opens the Tools screen rather than running inline.** This reuses the full report UI, history, PDF and summary without duplicating rendering, and avoids tying up the editor for 5–60s.
+- **2026-09-29 — Only published posts are checkable.** The fetch is unauthenticated, like a visitor or crawler, so drafts and private posts would 404.
 - **2026-09-29 — Three-step request flow.** Main checks run first, then PageSpeed and Claude run in parallel from JS. This keeps each request under host proxy timeouts and shows results sooner.
 - **2026-09-29 — Separate meta keys per part.** `_bsgc_report`, `_bsgc_performance`, `_bsgc_ai`, `_bsgc_score`. The parallel requests would otherwise overwrite each other.
 - **2026-09-29 — Scores recalculated on read.** `BSGC_Reports::get()` merges performance checks and re-scores; `_bsgc_score` is just a cache for the history table.
@@ -18,6 +20,7 @@ Decisions, gotchas and open items that aren't obvious from the code. Keep entrie
 - `wp_safe_remote_get()` rejects private IPs, so local `.test` sites can't be audited. This is intentional (SSRF guard).
 - Hosts with a hard 30s proxy timeout can cut off PageSpeed even with `set_time_limit( 150 )`.
 - Sites behind aggressive bot protection return 403 to server-side requests. The tool reports the block instead of auditing.
+- The block editor doesn't re-render meta boxes after saving. A newly published post shows "publish first" until the screen is reloaded.
 - Schema is read from static HTML only, so JS-injected JSON-LD won't be detected. Point users to Rich Results Test.
 
 ## Open items / tech debt

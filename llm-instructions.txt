@@ -17,14 +17,21 @@ inc/class-bsgc-analyser.php  all checks + score(); CATEGORIES, SEARCH_BOTS, TRAI
 inc/class-bsgc-pagespeed.php PSI v5 mobile
 inc/class-bsgc-ai.php        Anthropic Messages API, JSON fix list, sanitise()
 inc/class-bsgc-reports.php   hidden CPT bsgc_report
-inc/class-bsgc-admin.php     admin page + AJAX
+inc/class-bsgc-admin.php     admin page + AJAX + run_url()/report_url()
+inc/class-bsgc-editor.php    edit-screen sidebar box + front-end admin bar link
 assets/admin.js / admin.css  jQuery UI, print styles
 
 AJAX ACTIONS (nonce "bsgc", manage_options)
 bsgc_run_check, bsgc_run_pagespeed, bsgc_run_ai, bsgc_get_report, bsgc_delete_report
 
 STORAGE (post meta on bsgc_report)
-_bsgc_report (base checks), _bsgc_performance, _bsgc_ai, _bsgc_score (cache)
+_bsgc_report (base checks), _bsgc_performance, _bsgc_ai, _bsgc_score (cache),
+_bsgc_post_id (post the page belongs to; from the editor or url_to_postid)
+
+ENTRY POINTS
+Tools screen; ?bsgc_run=URL&bsgc_post=ID&_bsgcnonce=... (auto-runs if the nonce
+is valid); ?bsgc_report=ID (opens a report). Editor box on public post types
+(filter bsgc_post_types), published posts only. Admin bar "Check this page".
 PSI and AI run in parallel, so each writes its own key. Do not combine them.
 
 CHECK FORMAT

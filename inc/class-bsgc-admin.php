@@ -35,6 +35,77 @@ class BSGC_Admin {
 	}
 
 	/**
+	 * URL of the checker screen.
+	 *
+	 * @return string
+	 */
+	public static function page_url() {
+		return admin_url( 'tools.php?page=' . self::SLUG );
+	}
+
+	/**
+	 * Checker URL that fills in a page and runs it straight away. Nonced so a
+	 * crafted link can't make an admin spend PageSpeed/Claude credits.
+	 *
+	 * @param string $url     Page to check.
+	 * @param int    $post_id Post the page belongs to, if any.
+	 * @return string
+	 */
+	public static function run_url( $url, $post_id = 0 ) {
+		return add_query_arg(
+			array(
+				'bsgc_run'   => rawurlencode( $url ),
+				'bsgc_post'  => absint( $post_id ),
+				'_bsgcnonce' => wp_create_nonce( 'bsgc_run' ),
+			),
+			self::page_url()
+		);
+	}
+
+	/**
+	 * Checker URL that opens a saved report.
+	 *
+	 * @param int $id Report ID.
+	 * @return string
+	 */
+	public static function report_url( $id ) {
+		return add_query_arg( 'bsgc_report', absint( $id ), self::page_url() );
+	}
+
+	/**
+	 * What to do on load when arriving from the editor box or admin bar.
+	 * An expired nonce still fills in the URL, it just doesn't auto-run.
+	 *
+	 * @return array|null
+	 */
+	private static function launch() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- run is nonce-checked below; opening a report is read-only and its AJAX fetch is nonced.
+		if ( isset( $_GET['bsgc_run'] ) ) {
+			// normalise_url() sanitises with esc_url_raw(); sanitize_text_field() would strip %-encoded characters from permalinks.
+			$url = BSGC_Fetcher::normalise_url( wp_unslash( $_GET['bsgc_run'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+
+			if ( is_wp_error( $url ) ) {
+				return null;
+			}
+
+			$nonce = isset( $_GET['_bsgcnonce'] ) ? sanitize_key( wp_unslash( $_GET['_bsgcnonce'] ) ) : '';
+
+			return array(
+				'url'     => $url,
+				'postId'  => isset( $_GET['bsgc_post'] ) ? absint( $_GET['bsgc_post'] ) : 0,
+				'autorun' => (bool) wp_verify_nonce( $nonce, 'bsgc_run' ),
+			);
+		}
+
+		if ( isset( $_GET['bsgc_report'] ) ) {
+			return array( 'report' => absint( $_GET['bsgc_report'] ) );
+		}
+		// phpcs:enable
+
+		return null;
+	}
+
+	/**
 	 * Enqueue CSS/JS on our screen only.
 	 *
 	 * @param string $hook Current admin page hook.
@@ -60,6 +131,8 @@ class BSGC_Admin {
 					'hasAi'       => '' !== BSGC_Settings::get( 'anthropic_key' ),
 					'settingsUrl' => BSGC_Settings::settings_url(),
 					'signOff'     => $user->first_name ? $user->first_name : $user->display_name,
+					'pageUrl'     => self::page_url(),
+					'launch'      => self::launch(),
 				)
 			) . ';',
 			'before'
@@ -172,8 +245,10 @@ class BSGC_Admin {
 	public static function ajax_run_check() {
 		self::verify();
 
-		$raw = isset( $_POST['url'] ) ? sanitize_text_field( wp_unslash( $_POST['url'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in verify().
-		$url = BSGC_Fetcher::normalise_url( $raw );
+		// normalise_url() sanitises with esc_url_raw(); sanitize_text_field() would strip %-encoded characters from permalinks.
+		$raw     = isset( $_POST['url'] ) ? wp_unslash( $_POST['url'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- verified in verify(); sanitised by normalise_url().
+		$url     = BSGC_Fetcher::normalise_url( $raw );
+		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in verify().
 
 		if ( is_wp_error( $url ) ) {
 			wp_send_json_error( array( 'message' => $url->get_error_message() ) );
@@ -185,7 +260,12 @@ class BSGC_Admin {
 			wp_send_json_error( array( 'message' => $report->get_error_message() ) );
 		}
 
-		$id = BSGC_Reports::save( $report );
+		// Typed-in URLs on this site still get linked to their post; returns 0 for other sites.
+		if ( ! $post_id ) {
+			$post_id = url_to_postid( $report['final_url'] );
+		}
+
+		$id = BSGC_Reports::save( $report, $post_id );
 
 		if ( is_wp_error( $id ) ) {
 			wp_send_json_error( array( 'message' => 'Checks ran but the report could not be saved: ' . $id->get_error_message() ) );

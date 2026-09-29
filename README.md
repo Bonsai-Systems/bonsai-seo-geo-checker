@@ -43,7 +43,7 @@ define( 'BSGC_CLAUDE_MODEL', 'claude-haiku-4-5-20251001' ); // Optional.
 
 If you don't use constants, you can enter the keys on the ACF options page at **Settings → SEO/GEO checker**. That page needs ACF Pro.
 
-Best practice is to install it on one internal site, such as the Bonsai site or a tools install, rather than on client sites.
+To audit any site from one place, install it on an internal site such as the Bonsai site or a tools install. To use the editor button on a client's own pages, install it on that client site too. Keep the keys in `wp-config.php` there, and remember the API usage is billed to whoever owns the keys.
 
 ## Running costs
 
@@ -55,6 +55,20 @@ Best practice is to install it on one internal site, such as the Bonsai site or 
 - **Copy client summary** puts plain text on the clipboard: the score, the AI summary and the fixes in priority order, signed off with the current user's first name.
 - **Print or save as PDF** uses print styles that strip out the wp-admin chrome.
 - Reports are saved in a hidden `bsgc_report` post type. The last 25 are listed under the form, where you can view or delete them.
+
+## Checking from the editor
+
+- **Edit screens:** every public post type (posts, pages, custom post types and WooCommerce products, but not media) gets an **SEO/GEO check** box in the sidebar. **Check this page** opens the checker in a new tab and runs it on the published URL. The box also shows the last score, with a link to that report.
+- **Admin bar:** when you're logged in as an administrator, every front-end page gets **Check this page** in the toolbar, including archives and search results.
+- Only published content can be checked, because the checker fetches the live page the way a visitor would. Drafts, scheduled posts and private posts show a note instead of the button.
+- The links carry a nonce, so a link you were sent by someone else only fills in the URL without running the check. The same happens if an edit screen has been open for more than a day.
+- A report is linked to its post automatically, including when the URL is typed into the checker. To limit which post types get the box:
+
+```php
+add_filter( 'bsgc_post_types', function ( $types ) {
+	return array( 'post', 'page' );
+} );
+```
 
 ## Known limits
 

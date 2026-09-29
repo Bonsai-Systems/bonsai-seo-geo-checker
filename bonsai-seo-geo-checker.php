@@ -26,6 +26,7 @@ require_once BSGC_PATH . 'inc/class-bsgc-pagespeed.php';
 require_once BSGC_PATH . 'inc/class-bsgc-ai.php';
 require_once BSGC_PATH . 'inc/class-bsgc-reports.php';
 require_once BSGC_PATH . 'inc/class-bsgc-admin.php';
+require_once BSGC_PATH . 'inc/class-bsgc-editor.php';
 
 add_action(
 	'plugins_loaded',
@@ -33,5 +34,6 @@ add_action(
 		BSGC_Settings::init();
 		BSGC_Reports::init();
 		BSGC_Admin::init();
+		BSGC_Editor::init();
 	}
 );
