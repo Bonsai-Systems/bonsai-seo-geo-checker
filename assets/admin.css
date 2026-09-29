@@ -27,6 +27,49 @@
 	color: var(--bsgc-muted);
 }
 
+/* Settings brand header ------------------------------------------------ */
+
+.bsgc-brand {
+	display: flex;
+	gap: 16px;
+	align-items: flex-start;
+	max-width: 760px;
+	margin: 16px 0 8px;
+	padding: 16px;
+	background: var(--bsgc-surface);
+	border-left: 4px solid var(--bsgc-accent);
+	border-radius: var(--bsgc-radius);
+}
+
+.bsgc-brand__avatar {
+	flex: 0 0 64px;
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.bsgc-brand__text {
+	margin: 0 0 8px;
+	font-size: 14px;
+}
+
+.bsgc-brand__text:last-child {
+	margin-bottom: 0;
+}
+
+.bsgc-brand a {
+	color: var(--bsgc-ink);
+	font-weight: 600;
+}
+
+/* Pink on the light-blue surface fails AA contrast, so hover thickens the underline instead. */
+.bsgc-brand a:hover,
+.bsgc-brand a:focus {
+	color: var(--bsgc-ink);
+	text-decoration-thickness: 2px;
+}
+
 /* Form ---------------------------------------------------------------- */
 
 .bsgc-form {

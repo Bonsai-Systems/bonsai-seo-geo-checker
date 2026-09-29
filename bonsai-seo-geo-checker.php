@@ -1,9 +1,12 @@
 <?php
 /**
  * Plugin Name:       Bonsai SEO/GEO Checker
+ * Plugin URI:        https://github.com/Bonsai-Systems/bonsai-seo-geo-checker
  * Description:       Internal single-URL audit tool: search basics, AI visibility (GEO), PageSpeed Insights and a Claude-written fix list. Lives under Tools → SEO/GEO checker.
  * Version:           1.0.0
  * Author:            The Bonsai Digital Collective
+ * Author URI:        https://bonsaidigitalcollective.co.uk/
+ * Update URI:        https://github.com/Bonsai-Systems/bonsai-seo-geo-checker
  * Requires at least: 6.2
  * Requires PHP:      7.4
  * License:           GPL-2.0-or-later
@@ -15,6 +18,7 @@
 defined( 'ABSPATH' ) || exit;
 
 define( 'BSGC_VERSION', '1.0.0' );
+define( 'BSGC_FILE', __FILE__ );
 define( 'BSGC_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BSGC_URL', plugin_dir_url( __FILE__ ) );
 

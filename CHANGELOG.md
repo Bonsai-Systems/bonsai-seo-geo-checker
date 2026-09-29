@@ -14,6 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reports store the post they were run for (`_bsgc_post_id`), matched by `url_to_postid()` when the URL is typed in.
 - The checker screen now reads `?bsgc_run=` (nonced, runs on load) and `?bsgc_report=` (opens a saved report).
 - `CLAUDE.md`, `CHANGELOG.md`, `MEMORY.md` and `llm-instructions.txt` project documentation.
+- Settings screen header with the Bonsai avatar, a short description of the plugin and a link to bonsaidigitalcollective.co.uk.
+- "Settings" link in the plugin's row on the Plugins screen.
+- `Plugin URI`, `Author URI` and `Update URI` plugin headers.
+
+### Changed
+- Settings (Settings → SEO/GEO checker) now use the native Settings API instead of an ACF options page, so ACF Pro is no longer needed. Values live in one non-autoloaded `bsgc_settings` option, and existing ACF values are migrated automatically.
+- GitHub repository moved to https://github.com/Bonsai-Systems/bonsai-seo-geo-checker.
+
+### Security
+- Saved API keys are no longer sent to the browser. The ACF password field printed the stored key into the page source. Key fields now render empty with an "ending xxxx" hint, leaving them blank keeps the saved key, and a "Remove saved key" checkbox clears it. Fields controlled by a `wp-config.php` constant are locked.
 
 ### Fixed
 - URLs containing %-encoded characters (e.g. non-ASCII permalinks) are no longer mangled. `sanitize_text_field()` stripped them before `esc_url_raw()` ran.

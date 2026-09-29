@@ -10,7 +10,7 @@ Version 1.0.0. WP 6.2+, PHP 7.4+. Prefix: bsgc / BSGC_.
 
 FILES
 bonsai-seo-geo-checker.php  bootstrap, constants BSGC_VERSION/PATH/URL
-inc/class-bsgc-settings.php  ACF options sub-page + BSGC_Settings::get()
+inc/class-bsgc-settings.php  Settings API page + BSGC_Settings::get()
 inc/class-bsgc-fetcher.php   wp_safe_remote_get wrapper (SSRF-safe)
 inc/class-bsgc-robots.php    RFC 9309 robots.txt parser
 inc/class-bsgc-analyser.php  all checks + score(); CATEGORIES, SEARCH_BOTS, TRAINING_BOTS
@@ -38,11 +38,12 @@ CHECK FORMAT
 category, id, label, status (pass|warn|fail|info), message, weight, value
 Score: pass = weight, warn = weight/2, fail = 0, info = unscored.
 
-SETTINGS (constant overrides ACF option)
-BSGC_ANTHROPIC_KEY / bsgc_anthropic_api_key
-BSGC_PSI_KEY       / bsgc_psi_api_key
-BSGC_CLAUDE_MODEL  / bsgc_claude_model  (default claude-haiku-4-5-20251001)
-ACF fields are registered in PHP, so there is no acf-json folder.
+SETTINGS (constant overrides the bsgc_settings option, non-autoloaded array)
+BSGC_ANTHROPIC_KEY / anthropic_key
+BSGC_PSI_KEY       / psi_key
+BSGC_CLAUDE_MODEL  / model  (default claude-haiku-4-5-20251001)
+Native Settings API page at Settings > SEO/GEO checker. No ACF dependency.
+Saved keys are never printed back to the page; blank on save keeps the stored key.
 
 RULES
 - WordPress Coding Standards: tabs, Yoda conditions, escape all output.

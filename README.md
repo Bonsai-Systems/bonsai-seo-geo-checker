@@ -2,6 +2,8 @@
 
 This is an internal tool for auditing a single URL. It lives under **Tools → SEO/GEO checker**, and only administrators (`manage_options`) can use it.
 
+Built by [The Bonsai Digital Collective](https://bonsaidigitalcollective.co.uk/). Source: [Bonsai-Systems/bonsai-seo-geo-checker](https://github.com/Bonsai-Systems/bonsai-seo-geo-checker).
+
 ## What it checks
 
 **Technical:** HTTPS, HTTP status, redirect chains, server response time, HTML size, noindex (meta and X-Robots-Tag), canonical, `lang`, viewport, robots.txt, whether Googlebot is blocked, and the XML sitemap (including whether robots.txt references it).
@@ -41,7 +43,7 @@ define( 'BSGC_PSI_KEY', 'AIza...' );                        // Free, from Google
 define( 'BSGC_CLAUDE_MODEL', 'claude-haiku-4-5-20251001' ); // Optional.
 ```
 
-If you don't use constants, you can enter the keys on the ACF options page at **Settings → SEO/GEO checker**. That page needs ACF Pro.
+If you don't use constants, enter the keys at **Settings → SEO/GEO checker** (there's also a Settings link on the Plugins screen). You don't need ACF for this. Saved keys are never shown again: the field shows the last four characters, you leave it blank to keep the key, and you tick **Remove saved key** to delete it. When a constant is defined, the matching field is locked.
 
 To audit any site from one place, install it on an internal site such as the Bonsai site or a tools install. To use the editor button on a client's own pages, install it on that client site too. Keep the keys in `wp-config.php` there, and remember the API usage is billed to whoever owns the keys.
 
