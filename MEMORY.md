@@ -12,6 +12,7 @@ Decisions, gotchas and open items that aren't obvious from the code. Keep entrie
 - **2026-09-29 — Scores recalculated on read.** `BSGC_Reports::get()` merges performance checks and re-scores; `_bsgc_score` is just a cache for the history table.
 - **2026-09-29 — Keys: constants first.** `wp-config.php` constants override the saved settings so keys can stay out of the database.
 - **2026-09-29 — Settings moved from ACF to the native Settings API.** This removes the ACF Pro dependency, so the page works on any client site. It also stops the key being printed into the page: ACF's password field puts the saved value in the `value` attribute. Old ACF values are migrated once and then deleted. It's an intentional exception to the "ACF everywhere" default.
+- **2026-09-29 — Updates via plugin-update-checker, same as Code Injector.** The Composer `autoloader-suffix` is fixed because Code Injector and ActiveCampaign fatalled on a shared `ComposerAutoloaderInit<hash>` class. Unlike Code Injector, the zip is built by a GitHub Action rather than by hand, and `REQUIRE_RELEASE_ASSETS` stops sites installing the source archive. Sites on 1.0.0 have no updater, so they need a one-off manual install of 1.1.0.
 - **2026-09-29 — Training bots unscored.** Blocking GPTBot/ClaudeBot etc. is a client policy decision, not an SEO fault.
 - **2026-09-29 — Default model Haiku 4.5.** It's cheap enough for fix lists; override via `BSGC_CLAUDE_MODEL`.
 

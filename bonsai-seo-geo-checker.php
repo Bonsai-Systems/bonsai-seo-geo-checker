@@ -3,7 +3,7 @@
  * Plugin Name:       Bonsai SEO/GEO Checker
  * Plugin URI:        https://github.com/Bonsai-Systems/bonsai-seo-geo-checker
  * Description:       Internal single-URL audit tool: search basics, AI visibility (GEO), PageSpeed Insights and a Claude-written fix list. Lives under Tools → SEO/GEO checker.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Author:            The Bonsai Digital Collective
  * Author URI:        https://bonsaidigitalcollective.co.uk/
  * Update URI:        https://github.com/Bonsai-Systems/bonsai-seo-geo-checker
@@ -17,11 +17,27 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'BSGC_VERSION', '1.0.0' );
+/*
+ * Duplicate install guard. If a second copy is active (e.g. a GitHub "Source
+ * code" zip unpacked as bonsai-seo-geo-checker-1.1.0/ next to the real folder),
+ * loading it would fatal on redeclared BSGC_ classes. Bail and tell the admin.
+ */
+if ( defined( 'BSGC_VERSION' ) ) {
+	add_action(
+		'admin_notices',
+		function () {
+			echo '<div class="notice notice-error"><p>Bonsai SEO/GEO Checker is installed more than once. Please delete the duplicate plugin folder.</p></div>';
+		}
+	);
+	return;
+}
+
+define( 'BSGC_VERSION', '1.1.0' );
 define( 'BSGC_FILE', __FILE__ );
 define( 'BSGC_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BSGC_URL', plugin_dir_url( __FILE__ ) );
 
+require_once BSGC_PATH . 'inc/class-bsgc-updater.php';
 require_once BSGC_PATH . 'inc/class-bsgc-settings.php';
 require_once BSGC_PATH . 'inc/class-bsgc-fetcher.php';
 require_once BSGC_PATH . 'inc/class-bsgc-robots.php';
@@ -31,6 +47,8 @@ require_once BSGC_PATH . 'inc/class-bsgc-ai.php';
 require_once BSGC_PATH . 'inc/class-bsgc-reports.php';
 require_once BSGC_PATH . 'inc/class-bsgc-admin.php';
 require_once BSGC_PATH . 'inc/class-bsgc-editor.php';
+
+BSGC_Updater::init();
 
 add_action(
 	'plugins_loaded',

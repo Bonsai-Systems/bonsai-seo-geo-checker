@@ -1,0 +1,16 @@
+{
+    "name": "bonsai-digital-collective/bonsai-seo-geo-checker",
+    "description": "Single-URL SEO and AI visibility (GEO) audit tool for WordPress.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "config": {
+        "autoloader-suffix": "BonsaiSeoGeoChecker",
+        "optimize-autoloader": true,
+        "platform": {
+            "php": "7.4"
+        }
+    },
+    "require": {
+        "yahnis-elsts/plugin-update-checker": "^5.6"
+    }
+}

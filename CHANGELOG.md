@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-29
+
 ### Added
+- Updates from GitHub releases in wp-admin, via YahnisElsts/plugin-update-checker 5.7 (Composer, `vendor/` committed). Sites check every 6 hours and install only the `bonsai-seo-geo-checker.zip` release asset.
+- `.github/workflows/release.yml` builds that zip and attaches it when a release is published. It fails if the tag doesn't match the plugin version.
+- Fixed Composer `autoloader-suffix` (`BonsaiSeoGeoChecker`), so the autoloader class can't clash with other Bonsai plugins that bundle the same updater.
+- Duplicate install guard: a second active copy shows an admin notice instead of causing a fatal error.
+- Optional `BSGC_GITHUB_TOKEN` constant, in case the repo is ever made private.
 - "SEO/GEO check" sidebar box on edit screens for all public post types. It opens the checker with the post's URL already running and shows the last score with a link to that report.
 - "Check this page" admin bar link on the front end for administrators.
 - `bsgc_post_types` filter to control which post types get the box.

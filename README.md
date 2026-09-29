@@ -34,7 +34,7 @@ Built by [The Bonsai Digital Collective](https://bonsaidigitalcollective.co.uk/)
 
 ## Install
 
-1. Zip the `bonsai-seo-geo-checker` folder, or copy it into `wp-content/plugins/`, then activate it.
+1. Download `bonsai-seo-geo-checker.zip` from the [latest release](https://github.com/Bonsai-Systems/bonsai-seo-geo-checker/releases/latest), upload it under **Plugins → Add New → Upload Plugin**, then activate it. Don't use GitHub's "Source code" zip: it unpacks to a versioned folder name and includes dev files.
 2. Add the API keys, ideally in `wp-config.php` so they never sit in the database:
 
 ```php
@@ -46,6 +46,27 @@ define( 'BSGC_CLAUDE_MODEL', 'claude-haiku-4-5-20251001' ); // Optional.
 If you don't use constants, enter the keys at **Settings → SEO/GEO checker** (there's also a Settings link on the Plugins screen). You don't need ACF for this. Saved keys are never shown again: the field shows the last four characters, you leave it blank to keep the key, and you tick **Remove saved key** to delete it. When a constant is defined, the matching field is locked.
 
 To audit any site from one place, install it on an internal site such as the Bonsai site or a tools install. To use the editor button on a client's own pages, install it on that client site too. Keep the keys in `wp-config.php` there, and remember the API usage is billed to whoever owns the keys.
+
+## Updates
+
+The plugin updates itself from GitHub releases. It uses [YahnisElsts/plugin-update-checker](https://github.com/YahnisElsts/plugin-update-checker), installed with Composer (`vendor/` is committed). New versions appear under **Plugins** in wp-admin like any other plugin update. Sites check every 6 hours, or straight away when you click **Check for updates** on the plugin's row.
+
+To ship a new version:
+
+1. Bump `Version:` in `bonsai-seo-geo-checker.php` **and** `BSGC_VERSION`, and add a `CHANGELOG.md` entry.
+2. Commit and push to `main`.
+3. Publish a GitHub release tagged with the version, e.g. `v1.1.0` or `1.1.0`.
+4. The **Release zip** GitHub Action builds `bonsai-seo-geo-checker.zip` and attaches it to the release. It stops with an error if the tag doesn't match both version numbers.
+
+Sites only take the attached `bonsai-seo-geo-checker.zip` and never GitHub's source archive, so a release with no zip isn't offered.
+
+If the repo is ever made private, add a read-only GitHub token to `wp-config.php` on each site:
+
+```php
+define( 'BSGC_GITHUB_TOKEN', 'github_pat_...' );
+```
+
+The Composer autoloader has its own fixed suffix (`ComposerAutoloaderInitBonsaiSeoGeoChecker`), so it can't clash with other Bonsai plugins that bundle the same updater. If two copies of this plugin are active at once, the second one shows an admin notice instead of causing a fatal error.
 
 ## Running costs
 

@@ -6,10 +6,12 @@ Internal WordPress plugin by The Bonsai Digital Collective. It audits one URL fo
 technical SEO, meta, content, social, structured data, AI visibility (GEO) and
 mobile performance (PageSpeed Insights), then asks Claude for a prioritised fix
 list. Admin page: Tools > SEO/GEO checker. Capability: manage_options.
-Version 1.0.0. WP 6.2+, PHP 7.4+. Prefix: bsgc / BSGC_.
+Version 1.1.0. WP 6.2+, PHP 7.4+. Prefix: bsgc / BSGC_.
+Repo: https://github.com/Bonsai-Systems/bonsai-seo-geo-checker
 
 FILES
-bonsai-seo-geo-checker.php  bootstrap, constants BSGC_VERSION/PATH/URL
+bonsai-seo-geo-checker.php  bootstrap, duplicate guard, constants BSGC_VERSION/FILE/PATH/URL
+inc/class-bsgc-updater.php   plugin-update-checker (GitHub release asset zip)
 inc/class-bsgc-settings.php  Settings API page + BSGC_Settings::get()
 inc/class-bsgc-fetcher.php   wp_safe_remote_get wrapper (SSRF-safe)
 inc/class-bsgc-robots.php    RFC 9309 robots.txt parser
@@ -57,3 +59,10 @@ RULES
   Google's Rich Results Test.
 - Update CHANGELOG.md and bump the version in both the plugin header and
   BSGC_VERSION for releases.
+
+RELEASES
+Bump both versions, push main, publish a GitHub release tagged vX.Y.Z. The
+release workflow attaches bonsai-seo-geo-checker.zip; sites update from that
+only. vendor/ is committed. Keep composer.json config.autoloader-suffix
+(BonsaiSeoGeoChecker) and never copy vendor/ from another plugin, or the
+Composer autoloader class clashes with other Bonsai plugins.

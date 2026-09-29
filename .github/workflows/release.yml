@@ -1,0 +1,53 @@
+# Builds bonsai-seo-geo-checker.zip and attaches it to each published GitHub
+# release. Sites pick it up through plugin-update-checker (release-assets mode).
+name: Release zip
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      SLUG: bonsai-seo-geo-checker
+      TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check tag matches plugin version
+        run: |
+          header=$(grep -m1 -E '^\s*\*\s*Version:' "$SLUG.php" | awk '{print $NF}')
+          constant=$(sed -nE "s/.*define\( 'BSGC_VERSION', '([^']+)'.*/\1/p" "$SLUG.php" | head -1)
+          tag="${TAG#v}"
+          echo "Tag: $tag  Header: $header  Constant: $constant"
+          if [ "$tag" != "$header" ] || [ "$tag" != "$constant" ]; then
+            echo "::error::Release tag ($tag) must match the Version header ($header) and BSGC_VERSION ($constant)."
+            exit 1
+          fi
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          tools: composer:v2
+
+      - name: Install production dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Build zip
+        run: |
+          mkdir -p "build/$SLUG"
+          rsync -a ./ "build/$SLUG/" \
+            --exclude '.git' --exclude '.github' --exclude 'build' \
+            --exclude '.gitignore' --exclude '.gitattributes' \
+            --exclude 'CLAUDE.md' --exclude 'MEMORY.md' --exclude 'llm-instructions.txt' \
+            --exclude 'composer.json' --exclude 'composer.lock' --exclude 'tests'
+          cd build && zip -rq "$SLUG.zip" "$SLUG"
+
+      - name: Attach zip to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" "build/$SLUG.zip" --clobber
