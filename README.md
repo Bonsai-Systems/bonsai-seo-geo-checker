@@ -35,7 +35,31 @@ Built by [The Bonsai Digital Collective](https://bonsaidigitalcollective.co.uk/)
 ## Install
 
 1. Download `bonsai-seo-geo-checker.zip` from the [latest release](https://github.com/Bonsai-Systems/bonsai-seo-geo-checker/releases/latest), upload it under **Plugins → Add New → Upload Plugin**, then activate it. Don't use GitHub's "Source code" zip: it unpacks to a versioned folder name and includes dev files.
-2. Add the API keys, ideally in `wp-config.php` so they never sit in the database:
+2. Add your API keys using one of the two options below.
+
+### Settings
+
+| Setting | Needed for | Required? | Where to get it |
+|---|---|---|---|
+| Anthropic API key | The Claude-written fix list | Yes, for the fix list. The checks run without it | [console.anthropic.com](https://console.anthropic.com/) → API keys |
+| PageSpeed Insights API key | Mobile performance checks | No, but without it Google rate-limits requests heavily | Google Cloud Console → enable the PageSpeed Insights API → Credentials. It's free |
+| Claude model | Choosing the model | No. Defaults to `claude-haiku-4-5-20251001` | – |
+
+### Option 1: Settings screen (quickest)
+
+Go to **Settings → SEO/GEO checker**. There's also a **Settings** link on the plugin's row on the Plugins screen. Paste in the keys and save. You don't need ACF.
+
+The keys are treated like passwords:
+
+- Once saved, a key is never shown again, not even in the page source. The field only shows its last four characters so you can tell which key is in use.
+- Leave a key field blank when saving to keep the current key.
+- Tick **Remove saved key** to delete it.
+
+Keys entered here are stored in the database (the `bsgc_settings` option).
+
+### Option 2: `wp-config.php` (recommended for client sites)
+
+Add these above the `/* That's all, stop editing! */` line so the keys never touch the database:
 
 ```php
 define( 'BSGC_ANTHROPIC_KEY', 'sk-ant-...' );
@@ -43,9 +67,12 @@ define( 'BSGC_PSI_KEY', 'AIza...' );                        // Free, from Google
 define( 'BSGC_CLAUDE_MODEL', 'claude-haiku-4-5-20251001' ); // Optional.
 ```
 
-If you don't use constants, enter the keys at **Settings → SEO/GEO checker** (there's also a Settings link on the Plugins screen). You don't need ACF for this. Saved keys are never shown again: the field shows the last four characters, you leave it blank to keep the key, and you tick **Remove saved key** to delete it. When a constant is defined, the matching field is locked.
+Anything defined here overrides the Settings screen. The matching field is locked and shows **Set in wp-config.php**. You can mix the two, e.g. keys in `wp-config.php` and the model on the Settings screen.
 
-To audit any site from one place, install it on an internal site such as the Bonsai site or a tools install. To use the editor button on a client's own pages, install it on that client site too. Keep the keys in `wp-config.php` there, and remember the API usage is billed to whoever owns the keys.
+### Where to install it
+
+- **Auditing any site from one place:** install it on an internal site, such as the Bonsai site or a tools install.
+- **Using the editor button on a client's own pages:** install it on that client site too. Use `wp-config.php` for the keys there, and remember the API usage is billed to whoever owns the keys.
 
 ## Updates
 
