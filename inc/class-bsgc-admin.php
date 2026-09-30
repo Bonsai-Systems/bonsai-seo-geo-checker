@@ -115,7 +115,8 @@ class BSGC_Admin {
 			return;
 		}
 
-		wp_enqueue_style( 'bsgc-admin', BSGC_URL . 'assets/admin.css', array(), BSGC_VERSION );
+		BSGC_Admin_UI::enqueue();
+		wp_enqueue_style( 'bsgc-admin', BSGC_URL . 'assets/admin.css', array( BSGC_Admin_UI::HANDLE ), BSGC_VERSION );
 		wp_enqueue_script( 'bsgc-admin', BSGC_URL . 'assets/admin.js', array( 'jquery' ), BSGC_VERSION, true );
 
 		$user = wp_get_current_user();
@@ -149,9 +150,19 @@ class BSGC_Admin {
 
 		$recent = BSGC_Reports::recent( 25 );
 		?>
-		<div class="wrap bsgc">
-			<h1>SEO/GEO checker</h1>
-			<p class="bsgc-intro">Checks one page for search basics and AI visibility, tests mobile performance with PageSpeed Insights, then writes a prioritised fix list.</p>
+		<div class="wrap bonsai-ui bsgc">
+			<?php
+			BSGC_Admin_UI::header(
+				'SEO/GEO checker',
+				'Checks one page for search basics and AI visibility, tests mobile performance with PageSpeed Insights, then writes a prioritised fix list.',
+				array(
+					array(
+						'label' => 'Settings',
+						'url'   => BSGC_Settings::settings_url(),
+					),
+				)
+			);
+			?>
 
 			<form id="bsgc-form" class="bsgc-form" novalidate>
 				<label for="bsgc-url">Page URL</label>

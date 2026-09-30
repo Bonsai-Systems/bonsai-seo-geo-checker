@@ -26,7 +26,6 @@ class BSGC_Settings {
 	const GROUP         = 'bsgc_settings';
 	const SLUG          = 'bsgc-settings';
 	const HOOK          = 'settings_page_bsgc-settings';
-	const WEBSITE       = 'https://bonsaidigitalcollective.co.uk/';
 
 	/**
 	 * Setting key => wp-config.php constant that overrides it.
@@ -162,7 +161,7 @@ class BSGC_Settings {
 	 */
 	public static function assets( $hook ) {
 		if ( self::HOOK === $hook ) {
-			wp_enqueue_style( 'bsgc-admin', BSGC_URL . 'assets/admin.css', array(), BSGC_VERSION );
+			BSGC_Admin_UI::enqueue();
 		}
 	}
 
@@ -279,27 +278,21 @@ class BSGC_Settings {
 		$stored = self::stored();
 		$fields = self::fields();
 		?>
-		<div class="wrap bsgc bsgc-settings">
-			<header class="bsgc-brand">
-				<div class="bsgc-brand__body">
-					<img class="bsgc-brand__avatar" src="<?php echo esc_url( BSGC_URL . 'assets/bonsai-avatar.jpg' ); ?>" width="412" height="108" alt="The Bonsai Digital Collective">
-					<h1 class="bsgc-brand__title">SEO/GEO checker settings</h1>
-					<p class="bsgc-brand__text">Checks a single page for search basics, AI visibility (GEO) and mobile performance, then uses Claude to write a prioritised fix list. Run checks from <a href="<?php echo esc_url( BSGC_Admin::page_url() ); ?>">Tools → SEO/GEO checker</a> or the box on any published page's edit screen.</p>
-					<p class="bsgc-brand__text">Built and maintained by <a href="<?php echo esc_url( self::WEBSITE ); ?>" target="_blank" rel="noopener noreferrer">The Bonsai Digital Collective<span class="screen-reader-text"> (opens in a new tab)</span></a>.</p>
-				</div>
-				<span class="bsgc-brand__version">v<?php echo esc_html( BSGC_VERSION ); ?></span>
-			</header>
-
-			<?php // Core moves admin notices to just after this marker, so they sit below the header. ?>
-			<hr class="wp-header-end">
+		<div class="wrap bonsai-ui bonsai-ui--narrow">
+			<?php
+			BSGC_Admin_UI::header(
+				'SEO/GEO checker settings',
+				'Checks a single page for search basics, AI visibility (GEO) and mobile performance, then uses Claude to write a prioritised fix list. Run checks from <a href="' . esc_url( BSGC_Admin::page_url() ) . '">Tools → SEO/GEO checker</a> or the box on any published page\'s edit screen.'
+			);
+			?>
 
 			<form method="post" action="options.php">
 				<?php settings_fields( self::GROUP ); ?>
 
 				<?php foreach ( self::sections() as $section_id => $section ) : ?>
-					<section class="bsgc-card" aria-labelledby="bsgc-section-<?php echo esc_attr( $section_id ); ?>">
-						<h2 class="bsgc-card__title" id="bsgc-section-<?php echo esc_attr( $section_id ); ?>"><?php echo esc_html( $section['title'] ); ?></h2>
-						<p class="bsgc-card__intro"><?php echo esc_html( $section['intro'] ); ?></p>
+					<section class="bonsai-ui-card" aria-labelledby="bsgc-section-<?php echo esc_attr( $section_id ); ?>">
+						<h2 class="bonsai-ui-card__title" id="bsgc-section-<?php echo esc_attr( $section_id ); ?>"><?php echo esc_html( $section['title'] ); ?></h2>
+						<p class="bonsai-ui-card__intro"><?php echo esc_html( $section['intro'] ); ?></p>
 
 						<table class="form-table" role="presentation">
 							<?php
@@ -313,7 +306,7 @@ class BSGC_Settings {
 					</section>
 				<?php endforeach; ?>
 
-				<?php submit_button( 'Save settings', 'primary bsgc-button' ); ?>
+				<?php submit_button( 'Save settings' ); ?>
 			</form>
 		</div>
 		<?php

@@ -6,7 +6,7 @@ Internal WordPress plugin by The Bonsai Digital Collective. It audits one URL fo
 technical SEO, meta, content, social, structured data, AI visibility (GEO) and
 mobile performance (PageSpeed Insights), then asks Claude for a prioritised fix
 list. Admin page: Tools > SEO/GEO checker. Capability: manage_options.
-Version 1.1.0. WP 6.2+, PHP 7.4+. Prefix: bsgc / BSGC_.
+Version 1.2.0. WP 6.2+, PHP 7.4+. Prefix: bsgc / BSGC_.
 Repo: https://github.com/Bonsai-Systems/bonsai-seo-geo-checker
 
 FILES

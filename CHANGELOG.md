@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-30
+
+### Added
+- `assets/bonsai-admin-ui.css`: the Bonsai admin design system (header, cards, form controls, buttons, badges, status list, help area, toggle). This is the canonical copy other Bonsai plugins duplicate.
+- `BSGC_Admin_UI` renders the shared header: logo, title, lead, GitHub/changelog/Bonsai links and the version from `BSGC_VERSION`.
+
+### Changed
+- Settings screen restyled: logo header with version, fields grouped into "Claude fix list" and "PageSpeed Insights" cards.
+- Tools → SEO/GEO checker uses the same header, with a link to Settings.
+- Primary buttons hover to a darker pink (`#c21f48`). White on `#ee4367` fails AA contrast.
+
 ## [1.1.0] - 2026-09-29
 
 ### Added
