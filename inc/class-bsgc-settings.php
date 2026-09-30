@@ -69,6 +69,24 @@ class BSGC_Settings {
 	}
 
 	/**
+	 * Card sections on the settings screen, in display order.
+	 *
+	 * @return array
+	 */
+	private static function sections() {
+		return array(
+			'claude'    => array(
+				'title' => 'Claude fix list',
+				'intro' => 'Claude reads each finished report and writes the prioritised fix list. Without a key, reports still run but skip that step.',
+			),
+			'pagespeed' => array(
+				'title' => 'PageSpeed Insights',
+				'intro' => 'Google\'s mobile performance run, used for the Core Web Vitals checks.',
+			),
+		);
+	}
+
+	/**
 	 * Field definitions, in display order.
 	 *
 	 * @return array
@@ -76,16 +94,19 @@ class BSGC_Settings {
 	private static function fields() {
 		return array(
 			'anthropic_key' => array(
-				'label' => 'Anthropic API key',
-				'help'  => 'Needed for the fix list. Better: define BSGC_ANTHROPIC_KEY in wp-config.php, which overrides this field and keeps the key out of the database.',
+				'section' => 'claude',
+				'label'   => 'Anthropic API key',
+				'help'    => 'Needed for the fix list. Better: define BSGC_ANTHROPIC_KEY in wp-config.php, which overrides this field and keeps the key out of the database.',
 			),
 			'model'         => array(
-				'label' => 'Claude model',
-				'help'  => 'Haiku is plenty for fix lists and costs a fraction of a penny per report.',
+				'section' => 'claude',
+				'label'   => 'Claude model',
+				'help'    => 'Haiku is plenty for fix lists and costs a fraction of a penny per report.',
 			),
 			'psi_key'       => array(
-				'label' => 'PageSpeed Insights API key',
-				'help'  => 'Free from Google Cloud Console. Optional, but without one Google rate-limits PageSpeed requests heavily. BSGC_PSI_KEY in wp-config.php overrides this.',
+				'section' => 'pagespeed',
+				'label'   => 'PageSpeed Insights API key',
+				'help'    => 'Free from Google Cloud Console. Optional, but without one Google rate-limits PageSpeed requests heavily. BSGC_PSI_KEY in wp-config.php overrides this.',
 			),
 		);
 	}
@@ -256,30 +277,43 @@ class BSGC_Settings {
 		}
 
 		$stored = self::stored();
+		$fields = self::fields();
 		?>
-		<div class="wrap bsgc">
-			<h1>SEO/GEO checker settings</h1>
-
-			<div class="bsgc-brand">
-				<img class="bsgc-brand__avatar" src="<?php echo esc_url( BSGC_URL . 'assets/bonsai-avatar.jpg' ); ?>" width="412" height="108" alt="The Bonsai Digital Collective">
+		<div class="wrap bsgc bsgc-settings">
+			<header class="bsgc-brand">
 				<div class="bsgc-brand__body">
+					<img class="bsgc-brand__avatar" src="<?php echo esc_url( BSGC_URL . 'assets/bonsai-avatar.jpg' ); ?>" width="412" height="108" alt="The Bonsai Digital Collective">
+					<h1 class="bsgc-brand__title">SEO/GEO checker settings</h1>
 					<p class="bsgc-brand__text">Checks a single page for search basics, AI visibility (GEO) and mobile performance, then uses Claude to write a prioritised fix list. Run checks from <a href="<?php echo esc_url( BSGC_Admin::page_url() ); ?>">Tools → SEO/GEO checker</a> or the box on any published page's edit screen.</p>
 					<p class="bsgc-brand__text">Built and maintained by <a href="<?php echo esc_url( self::WEBSITE ); ?>" target="_blank" rel="noopener noreferrer">The Bonsai Digital Collective<span class="screen-reader-text"> (opens in a new tab)</span></a>.</p>
 				</div>
-			</div>
+				<span class="bsgc-brand__version">v<?php echo esc_html( BSGC_VERSION ); ?></span>
+			</header>
+
+			<?php // Core moves admin notices to just after this marker, so they sit below the header. ?>
+			<hr class="wp-header-end">
 
 			<form method="post" action="options.php">
 				<?php settings_fields( self::GROUP ); ?>
 
-				<table class="form-table" role="presentation">
-					<?php
-					foreach ( self::fields() as $key => $field ) {
-						self::render_field( $key, $field, $stored );
-					}
-					?>
-				</table>
+				<?php foreach ( self::sections() as $section_id => $section ) : ?>
+					<section class="bsgc-card" aria-labelledby="bsgc-section-<?php echo esc_attr( $section_id ); ?>">
+						<h2 class="bsgc-card__title" id="bsgc-section-<?php echo esc_attr( $section_id ); ?>"><?php echo esc_html( $section['title'] ); ?></h2>
+						<p class="bsgc-card__intro"><?php echo esc_html( $section['intro'] ); ?></p>
 
-				<?php submit_button(); ?>
+						<table class="form-table" role="presentation">
+							<?php
+							foreach ( $fields as $key => $field ) {
+								if ( $section_id === $field['section'] ) {
+									self::render_field( $key, $field, $stored );
+								}
+							}
+							?>
+						</table>
+					</section>
+				<?php endforeach; ?>
+
+				<?php submit_button( 'Save settings', 'primary bsgc-button' ); ?>
 			</form>
 		</div>
 		<?php
