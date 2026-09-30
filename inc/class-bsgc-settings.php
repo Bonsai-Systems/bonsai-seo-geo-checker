@@ -261,7 +261,7 @@ class BSGC_Settings {
 			<h1>SEO/GEO checker settings</h1>
 
 			<div class="bsgc-brand">
-				<img class="bsgc-brand__avatar" src="<?php echo esc_url( BSGC_URL . 'assets/bonsai-avatar.jpg' ); ?>" width="64" height="64" alt="The Bonsai Digital Collective">
+				<img class="bsgc-brand__avatar" src="<?php echo esc_url( BSGC_URL . 'assets/bonsai-avatar.jpg' ); ?>" width="412" height="108" alt="The Bonsai Digital Collective">
 				<div class="bsgc-brand__body">
 					<p class="bsgc-brand__text">Checks a single page for search basics, AI visibility (GEO) and mobile performance, then uses Claude to write a prioritised fix list. Run checks from <a href="<?php echo esc_url( BSGC_Admin::page_url() ); ?>">Tools → SEO/GEO checker</a> or the box on any published page's edit screen.</p>
 					<p class="bsgc-brand__text">Built and maintained by <a href="<?php echo esc_url( self::WEBSITE ); ?>" target="_blank" rel="noopener noreferrer">The Bonsai Digital Collective<span class="screen-reader-text"> (opens in a new tab)</span></a>.</p>

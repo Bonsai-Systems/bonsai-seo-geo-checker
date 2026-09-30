@@ -29,8 +29,10 @@
 
 /* Settings brand header ------------------------------------------------ */
 
+/* Logo stacked above the description. */
 .bsgc-brand {
 	display: flex;
+	flex-direction: column;
 	gap: 16px;
 	align-items: flex-start;
 	max-width: 760px;
@@ -42,11 +44,10 @@
 }
 
 .bsgc-brand__avatar {
-	flex: 0 0 64px;
-	width: 64px;
-	height: 64px;
-	border-radius: 50%;
-	object-fit: cover;
+	display: block;
+	width: 250px;
+	max-width: 100%;
+	height: auto;
 }
 
 .bsgc-brand__text {
