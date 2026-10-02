@@ -6,15 +6,15 @@ Built by [The Bonsai Digital Collective](https://bonsaidigitalcollective.co.uk/)
 
 ## What it checks
 
-**Technical:** HTTPS, HTTP status, redirect chains, server response time, HTML size, noindex (meta and X-Robots-Tag), canonical (including conflicts between the HTML tag and the HTTP `Link` header), `lang`, hreflang (only when present: valid codes, `en-uk` instead of `en-gb`, absolute URLs, self-reference), viewport, robots.txt, whether Googlebot is blocked, and the XML sitemap (including whether robots.txt references it).
-
+**Technical:** HTTPS, HTTP status, redirect chains, server response time, HTML size, noindex (meta and X-Robots-Tag), canonical, `lang`, viewport, robots.txt, whether Googlebot is blocked, and the XML sitemap (including whether robots.txt references it).
+ ther 
 **Titles and descriptions:** title length and duplicate `<title>` tags, and meta description length.
 
-**Content:** H1 count, skipped heading levels, visible word count, image alt attributes, internal/external links, links with no text, and broken internal links (a sample of up to 10, see Known limits).
+**Content:** H1 count, skipped heading levels, visible word count, image alt attributes, internal/external links and links with no text.
 
 **Social sharing:** Open Graph title, description and image, plus the Twitter card.
 
-**Structured data:** JSON-LD and microdata types, invalid JSON-LD blocks and, when LocalBusiness schema is present, whether it has an address, telephone number and opening hours.
+**Structured data:** JSON-LD and microdata types, and invalid JSON-LD blocks.
 
 **AI visibility (GEO):**
 - robots.txt access for the search and answer crawlers: Googlebot, Bingbot, OAI-SearchBot, ChatGPT-User, PerplexityBot, Perplexity-User, Claude-SearchBot and Claude-User.
@@ -28,9 +28,7 @@ Built by [The Bonsai Digital Collective](https://bonsaidigitalcollective.co.uk/)
 
 **Performance:** the PageSpeed Insights mobile score, LCP, CLS and TBT, plus INP from real-user data where it exists.
 
-Every warning and failure shows the finding and, separately, a suggested fix.
-
-**Fix list:** Claude turns the warnings and failures into up to eight prioritised fixes. It leads with the one to three changes that matter most and leaves out cosmetic items rather than padding the list. Each fix says how it helps and has an effort level and an owner (client or developer).
+**Fix list:** Claude turns every warning and failure into up to eight prioritised fixes. Each one has an effort level and an owner (client or developer).
 
 **Scoring:** a pass earns the check's full weight, a warning earns half and a fail earns nothing. Info checks aren't scored.
 
@@ -127,5 +125,4 @@ add_filter( 'bsgc_post_types', function ( $types ) {
 - The main checks run in PHP, so a request can take 5–15 seconds. PageSpeed and Claude each take up to a minute. The plugin raises `set_time_limit`, but hosts with a hard 30-second proxy timeout may cut PageSpeed off. If that happens, run the tool on a host with longer limits.
 - Sites behind aggressive bot protection may return 403 to server-side requests. In that case the tool reports the block instead of auditing.
 - `wp_safe_remote_get()` refuses private/internal IPs, which stops it being used to probe the server's own network. The same rule means it can't check local `.test` sites.
-- The broken link check tests up to 10 unique internal links per page and stops after 20 seconds. It skips links with query strings (they can trigger actions such as add-to-cart or logout) and admin, login and feed links. 401, 403 and 429 responses and timeouts count as "couldn't be verified", not broken.
 - It checks one URL at a time and doesn't crawl. Crawling is the tier 3 version.
