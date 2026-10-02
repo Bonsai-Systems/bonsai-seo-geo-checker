@@ -105,6 +105,41 @@ class BSGC_Fetcher {
 	}
 
 	/**
+	 * HTTP status of a URL after redirects. Tries HEAD first and falls back to a
+	 * small GET for servers that don't support HEAD.
+	 *
+	 * @param string $url URL.
+	 * @return int|WP_Error Status code.
+	 */
+	public static function status( $url ) {
+		$args = array(
+			'timeout'     => 5,
+			'redirection' => 3, // HEAD requests don't follow redirects unless told to.
+			'user-agent'  => self::UA_BROWSER,
+		);
+
+		$response = wp_safe_remote_head( $url, $args );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$code = (int) wp_remote_retrieve_response_code( $response );
+
+		if ( in_array( $code, array( 405, 501 ), true ) ) {
+			$response = wp_safe_remote_get( $url, $args + array( 'limit_response_size' => 64 * KB_IN_BYTES ) );
+
+			if ( is_wp_error( $response ) ) {
+				return $response;
+			}
+
+			$code = (int) wp_remote_retrieve_response_code( $response );
+		}
+
+		return $code;
+	}
+
+	/**
 	 * Read a header as a string (handles repeated headers).
 	 *
 	 * @param mixed  $headers Headers object/array from get().

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Broken internal links check: tests up to 10 unique same-site links (HEAD with a GET fallback, via `wp_safe_remote_head`), skipping query-string, admin, login and feed links. Bot-protection responses and timeouts count as "couldn't be verified", not broken.
+- Canonical conflict detection between the HTML `<link rel="canonical">` and the HTTP `Link` header. A canonical set only in the header is now recognised.
+- hreflang check, shown only when the page has hreflang tags: invalid codes, `-uk` instead of `-gb`, duplicate codes, relative URLs and missing self-reference.
+- LocalBusiness details check, shown only when LocalBusiness schema is present: address, telephone and opening hours.
+- `BSGC_Fetcher::status()` for lightweight status checks.
+
+### Changed
+- Checks now have a separate `fix` field. `message` holds the finding only, and the report table shows "Fix:" under warnings and failures. Older saved reports still display normally.
+- The Claude fix-list prompt leads with the one to three changes that matter most, says how each fix helps (indexing, ranking, clicks or AI citations), leaves out cosmetic items rather than padding, and treats missing schema cautiously. Claude now also receives each issue's suggested fix and weight.
+
 ## [1.2.0] - 2026-09-30
 
 ### Added

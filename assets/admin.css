@@ -365,6 +365,12 @@
 	word-break: break-all;
 }
 
+.bsgc-fix {
+	display: block;
+	margin-top: 6px;
+	font-size: 13px;
+}
+
 /* History ------------------------------------------------------------- */
 
 .bsgc-history {

@@ -37,7 +37,8 @@ is valid); ?bsgc_report=ID (opens a report). Editor box on public post types
 PSI and AI run in parallel, so each writes its own key. Do not combine them.
 
 CHECK FORMAT
-category, id, label, status (pass|warn|fail|info), message, weight, value
+category, id, label, status (pass|warn|fail|info), message, weight, value, fix
+message = finding only; fix = what to do (shown for warn/fail). fix is optional: older saved reports lack it.
 Score: pass = weight, warn = weight/2, fail = 0, info = unscored.
 
 SETTINGS (constant overrides the bsgc_settings option, non-autoloaded array)

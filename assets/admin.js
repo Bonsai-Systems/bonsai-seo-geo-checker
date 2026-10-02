@@ -345,6 +345,15 @@
 			if ( c.value && -1 === c.message.indexOf( c.value ) ) {
 				$finding.append( $( '<span class="bsgc-value">' ).text( c.value ) );
 			}
+			// Older saved reports have no fix; pass checks don't need one.
+			if ( c.fix && ( 'warn' === c.status || 'fail' === c.status ) ) {
+				$finding.append(
+					$( '<span class="bsgc-fix">' ).append(
+						$( '<strong>' ).text( 'Fix: ' ),
+						$( '<span>' ).text( c.fix )
+					)
+				);
+			}
 
 			$tbody.append(
 				$( '<tr>' ).append(
