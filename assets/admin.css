@@ -365,7 +365,7 @@
 	word-break: break-all;
 }
 
-.bsgc-fix {
+.bsgc-check-fix {
 	display: block;
 	margin-top: 6px;
 	font-size: 13px;
@@ -429,36 +429,333 @@
 	}
 }
 
+/* Settings: report logo picker ---------------------------------------- */
+
+.bsgc-media__preview {
+	display: block;
+	max-width: 240px;
+	max-height: 90px;
+	margin-bottom: 8px;
+	padding: 8px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+}
+
+.bsgc-media__preview[hidden],
+.bsgc-media__remove[hidden] {
+	display: none;
+}
+
 /* Print / PDF --------------------------------------------------------- */
 
+/* Cover page and condensed passes only exist in the printed report. */
+.bsgc-print-only {
+	display: none;
+}
+
 @media print {
+	@page {
+		size: A4;
+		margin: 16mm 15mm 18mm;
+
+		/* Page numbers, where the browser supports margin boxes (Chrome 131+). */
+		@bottom-right {
+			content: counter(page) " / " counter(pages);
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+			font-size: 9pt;
+			color: #50575e;
+		}
+	}
+
+	@page :first {
+		@bottom-right {
+			content: none;
+		}
+	}
+
+	/* !important: wp-admin chrome and core notices set their own display values. */
 	#adminmenumain,
 	#wpadminbar,
 	#wpfooter,
+	#screen-meta,
 	#screen-meta-links,
 	.notice,
+	.update-nag,
+	.bonsai-ui-header,
+	.wp-header-end,
 	.bsgc-form,
 	.bsgc-status,
 	.bsgc-history,
-	.bsgc-report__actions,
+	.bsgc-report__header,
+	.bsgc-score-wrap,
+	.bsgc-fixes__summary,
 	.bsgc-regenerate,
-	.bsgc-report button {
+	.bsgc-report button,
+	.bsgc-panel--clean,
+	.bsgc-checks__row--pass,
+	.bsgc-checks__row--info {
 		display: none !important;
 	}
 
+	html,
+	body,
+	#wpwrap {
+		background: #fff !important;
+	}
+
 	#wpcontent,
-	#wpbody-content {
+	#wpbody-content,
+	.wrap {
 		margin: 0 !important;
 		padding: 0 !important;
+	}
+
+	.bsgc {
+		max-width: none;
+		font-size: 10pt;
+	}
+
+	.bsgc-report {
+		margin: 0;
+	}
+
+	.bsgc-print-only {
+		display: block;
 	}
 
 	.bsgc-scores,
 	.bsgc-score,
 	.bsgc-cats__bar,
 	.bsgc-badge,
-	.bsgc-tag {
+	.bsgc-tag,
+	.bsgc-cover,
+	.bsgc-fixes-panel,
+	.bsgc-passes__mark {
 		-webkit-print-color-adjust: exact;
 		print-color-adjust: exact;
+	}
+
+	.bsgc a {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	/* Cover --------------------------------------------------------------- */
+
+	.bsgc-cover {
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		min-height: 245mm;
+		padding: 10mm 4mm 0;
+		border-top: 3mm solid var(--bsgc-accent);
+		break-after: page;
+	}
+
+	.bsgc-cover__top {
+		min-height: 24mm;
+	}
+
+	.bsgc-cover__logo {
+		display: block;
+		max-width: 75mm;
+		max-height: 24mm;
+	}
+
+	.bsgc-cover__eyebrow {
+		margin: 0 0 4mm;
+		font-size: 11pt;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--bsgc-accent);
+	}
+
+	.bsgc-cover__url {
+		margin: 0 0 12mm;
+		font-size: 24pt;
+		font-weight: 700;
+		line-height: 1.2;
+		word-break: break-word;
+	}
+
+	.bsgc-cover__score {
+		display: flex;
+		gap: 10mm;
+		align-items: center;
+		margin-bottom: 12mm;
+	}
+
+	.bsgc-cover .bsgc-score {
+		background: conic-gradient(var(--bsgc-accent) calc(var(--bsgc-score) * 1%), var(--bsgc-surface) 0);
+	}
+
+	.bsgc-cover .bsgc-score::before {
+		background: #fff;
+	}
+
+	.bsgc-cover__stats {
+		display: grid;
+		gap: 2mm;
+		margin: 0;
+		font-size: 11pt;
+		color: var(--bsgc-muted);
+	}
+
+	.bsgc-cover__stats strong {
+		font-size: 14pt;
+		color: var(--bsgc-ink);
+	}
+
+	.bsgc-cover__summary {
+		max-width: 150mm;
+		margin: 0;
+		padding-left: 5mm;
+		font-size: 12pt;
+		line-height: 1.55;
+		border-left: 1mm solid var(--bsgc-accent);
+	}
+
+	.bsgc-cover__meta {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 2mm 8mm;
+		margin: 0;
+		padding-top: 5mm;
+		font-size: 10pt;
+		border-top: 1px solid var(--bsgc-line);
+	}
+
+	.bsgc-cover__meta dt {
+		font-weight: 600;
+	}
+
+	.bsgc-cover__meta dd {
+		margin: 0;
+	}
+
+	/* Report body --------------------------------------------------------- */
+
+	.bsgc-scores {
+		grid-template-columns: 1fr;
+		margin: 0 0 8mm;
+		padding: 6mm 8mm;
+	}
+
+	/* A4 is narrower than the 782px breakpoint, so undo the small-screen stacking. */
+	.bsgc-cats li {
+		grid-template-columns: 55mm 1fr 3em;
+		gap: 4mm;
+		font-size: 10pt;
+	}
+
+	.bsgc-cats__bar {
+		grid-column: auto;
+		grid-row: auto;
+	}
+
+	.bsgc-panel {
+		margin-bottom: 8mm;
+	}
+
+	.bsgc-panel h3 {
+		font-size: 13pt;
+		break-after: avoid;
+	}
+
+	.bsgc-fixes-panel {
+		padding: 5mm 6mm;
+		border: 1px solid var(--bsgc-line);
+		border-left: 1.5mm solid var(--bsgc-accent);
+	}
+
+	.bsgc-fixes,
+	.bsgc-fixes__summary {
+		max-width: none;
+	}
+
+	.bsgc-fixes__summary {
+		font-size: 11pt;
+	}
+
+	.bsgc-fix__title {
+		font-size: 11pt;
+	}
+
+	.bsgc-table-wrap {
+		overflow: visible;
+	}
+
+	.bsgc-checks th,
+	.bsgc-checks td {
+		padding: 2.5mm 3mm;
+	}
+
+	.bsgc-checks tbody th {
+		width: 42mm;
+	}
+
+	.bsgc-checks__result {
+		width: 20mm;
+	}
+
+	.bsgc-badge {
+		font-size: 8.5pt;
+	}
+
+	/* Condensed passes ---------------------------------------------------- */
+
+	.bsgc-passes__intro {
+		margin: 0 0 4mm;
+		color: var(--bsgc-muted);
+	}
+
+	.bsgc-passes h4 {
+		margin: 4mm 0 1.5mm;
+		font-size: 10.5pt;
+		break-after: avoid;
+	}
+
+	.bsgc-passes__list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.bsgc-passes__list li {
+		margin: 0;
+		padding: 1.2mm 0;
+		font-size: 9pt;
+		line-height: 1.4;
+		color: var(--bsgc-muted);
+		border-bottom: 1px solid var(--bsgc-line);
+		break-inside: avoid;
+	}
+
+	.bsgc-passes__list strong {
+		color: var(--bsgc-ink);
+	}
+
+	.bsgc-passes__mark {
+		display: inline-block;
+		min-width: 9mm;
+		margin-right: 2mm;
+		padding: 0 1.5mm;
+		font-size: 7.5pt;
+		font-weight: 600;
+		text-align: center;
+		border-radius: 3px;
+	}
+
+	.bsgc-passes__item--pass .bsgc-passes__mark {
+		color: var(--bsgc-pass);
+		background: var(--bsgc-pass-bg);
+	}
+
+	.bsgc-passes__item--info .bsgc-passes__mark {
+		color: var(--bsgc-muted);
+		background: #f0f0f1;
 	}
 
 	.bsgc-scores,

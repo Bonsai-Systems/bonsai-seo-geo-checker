@@ -73,6 +73,15 @@
 		return $( '<button type="button" class="button">' ).text( text ).on( 'click', handler );
 	}
 
+	function isIssue( c ) {
+		return 'warn' === c.status || 'fail' === c.status;
+	}
+
+	// URL without the protocol or trailing slash, for headings and file names.
+	function displayUrl( url ) {
+		return String( url ).replace( /^https?:\/\//i, '' ).replace( /\/$/, '' );
+	}
+
 	/* ------------------------------------------------------------------
 	 * Running checks
 	 * --------------------------------------------------------------- */
@@ -170,10 +179,12 @@
 		}
 
 		$report.empty().prop( 'hidden', false ).append(
+			renderCover( r ),
 			renderHeader( r ),
 			renderScores( r ),
 			renderFixes( r ),
-			renderCategories( r )
+			renderCategories( r ),
+			renderPasses( r )
 		);
 	}
 
@@ -202,6 +213,61 @@
 		);
 	}
 
+	/**
+	 * Print-only cover page: branding, URL, overall score, summary and who prepared it.
+	 */
+	function renderCover( r ) {
+		var brand = BSGC.brand || {};
+		var issues = $.grep( r.checks, isIssue ).length;
+		var passed = $.grep( r.checks, function ( c ) {
+			return 'pass' === c.status;
+		} ).length;
+
+		var $top = $( '<div class="bsgc-cover__top">' );
+		if ( brand.logo ) {
+			$top.append( $( '<img class="bsgc-cover__logo">' ).attr( { src: brand.logo, alt: brand.logoAlt || '' } ) );
+		}
+
+		var $main = $( '<div class="bsgc-cover__main">' ).append(
+			$( '<p class="bsgc-cover__eyebrow">' ).text( 'SEO and AI visibility report' ),
+			$( '<p class="bsgc-cover__url">' ).text( displayUrl( r.final_url ) ),
+			$( '<div class="bsgc-cover__score">' ).append(
+				scoreRing( r.scores.overall ),
+				$( '<p class="bsgc-cover__stats">' ).append(
+					$( '<strong>' ).text( 'Overall score' ),
+					$( '<span>' ).text( issues + ( 1 === issues ? ' issue' : ' issues' ) + ' to fix' ),
+					$( '<span>' ).text( passed + ' checks passed' )
+				)
+			)
+		);
+
+		if ( r.ai && 'done' === r.ai.status && r.ai.summary ) {
+			$main.append( $( '<p class="bsgc-cover__summary">' ).text( r.ai.summary ) );
+		}
+
+		var $meta = $( '<dl class="bsgc-cover__meta">' ).append(
+			$( '<dt>' ).text( 'Checked' ),
+			$( '<dd>' ).text( r.checked_at_label )
+		);
+		if ( brand.preparedBy ) {
+			$meta.append( $( '<dt>' ).text( 'Prepared by' ), $( '<dd>' ).text( brand.preparedBy ) );
+		}
+
+		return $( '<section class="bsgc-cover bsgc-print-only">' ).append( $top, $main, $meta );
+	}
+
+	function scoreRing( overall ) {
+		return $( '<div class="bsgc-score" role="img">' )
+			.attr( 'aria-label', 'Overall score ' + overall + ' out of 100' )
+			.css( '--bsgc-score', String( overall ) )
+			.append(
+				$( '<span class="bsgc-score__inner" aria-hidden="true">' ).append(
+					$( '<span class="bsgc-score__value">' ).text( overall ),
+					$( '<span class="bsgc-score__max">' ).text( 'out of 100' )
+				)
+			);
+	}
+
 	function renderScores( r ) {
 		var overall = r.scores.overall;
 		var $cats = $( '<ul class="bsgc-cats">' );
@@ -222,17 +288,7 @@
 			);
 		} );
 
-		var $ring = $( '<div class="bsgc-score" role="img">' )
-			.attr( 'aria-label', 'Overall score ' + overall + ' out of 100' )
-			.css( '--bsgc-score', String( overall ) )
-			.append(
-				$( '<span class="bsgc-score__inner" aria-hidden="true">' ).append(
-					$( '<span class="bsgc-score__value">' ).text( overall ),
-					$( '<span class="bsgc-score__max">' ).text( 'out of 100' )
-				)
-			);
-
-		var $side = $( '<div class="bsgc-score-wrap">' ).append( $ring );
+		var $side = $( '<div class="bsgc-score-wrap">' ).append( scoreRing( overall ) );
 		if ( state.perfPending ) {
 			$side.append( $( '<p class="bsgc-score-note">' ).text( 'Performance will be added when PageSpeed finishes.' ) );
 		}
@@ -311,6 +367,11 @@
 
 			var $section = $( '<section class="bsgc-panel">' ).append( $heading );
 
+			// Categories with nothing to fix are left out of the PDF; their checks appear in "Already in good shape".
+			if ( 'performance' !== key && ! $.grep( checks, isIssue ).length ) {
+				$section.addClass( 'bsgc-panel--clean' );
+			}
+
 			if ( 'performance' === key ) {
 				var perf = r.performance || {};
 				if ( state.perfPending ) {
@@ -348,7 +409,7 @@
 			// Older saved reports have no fix; pass checks don't need one.
 			if ( c.fix && ( 'warn' === c.status || 'fail' === c.status ) ) {
 				$finding.append(
-					$( '<span class="bsgc-fix">' ).append(
+					$( '<span class="bsgc-check-fix">' ).append(
 						$( '<strong>' ).text( 'Fix: ' ),
 						$( '<span>' ).text( c.fix )
 					)
@@ -356,7 +417,7 @@
 			}
 
 			$tbody.append(
-				$( '<tr>' ).append(
+				$( '<tr>' ).addClass( 'bsgc-checks__row--' + c.status ).append(
 					$( '<td class="bsgc-checks__result">' ).append(
 						$( '<span class="bsgc-badge">' ).addClass( 'bsgc-badge--' + c.status ).text( STATUS_LABELS[ c.status ] || c.status )
 					),
@@ -378,6 +439,45 @@
 				$tbody
 			)
 		);
+	}
+
+	/**
+	 * Print-only condensed list of passing and info checks, so the PDF leads
+	 * with what needs fixing but still shows what's already right.
+	 */
+	function renderPasses( r ) {
+		var $section = $( '<section class="bsgc-panel bsgc-passes bsgc-print-only">' ).append(
+			$( '<h3>' ).text( 'Already in good shape' ),
+			$( '<p class="bsgc-passes__intro">' ).text( 'These checks passed. Notes are for information and aren\'t scored.' )
+		);
+		var any = false;
+
+		$.each( BSGC.categories, function ( key, label ) {
+			var rows = $.grep( r.checks, function ( c ) {
+				return c.category === key && ( 'pass' === c.status || 'info' === c.status );
+			} );
+
+			if ( ! rows.length ) {
+				return;
+			}
+
+			any = true;
+			var $list = $( '<ul class="bsgc-passes__list">' );
+
+			$.each( rows, function ( i, c ) {
+				$list.append(
+					$( '<li>' ).addClass( 'bsgc-passes__item--' + c.status ).append(
+						$( '<span class="bsgc-passes__mark">' ).text( 'pass' === c.status ? 'Pass' : 'Note' ),
+						$( '<strong>' ).text( c.label ),
+						$( '<span>' ).text( ' – ' + c.message )
+					)
+				);
+			} );
+
+			$section.append( $( '<h4>' ).text( label ), $list );
+		} );
+
+		return any ? $section : $();
 	}
 
 	/* ------------------------------------------------------------------
@@ -530,6 +630,20 @@
 			var $row = $( this ).closest( 'tr' );
 			deleteReport( parseInt( $row.data( 'id' ), 10 ), $row );
 		} );
+
+		// Browsers use the page title as the PDF file name, so swap it while printing.
+		var originalTitle = document.title;
+		$( window )
+			.on( 'beforeprint.bonsai_bsgc', function () {
+				var r = state.report;
+				if ( r ) {
+					var date = new Date( r.checked_at * 1000 ).toISOString().slice( 0, 10 );
+					document.title = 'SEO report – ' + displayUrl( r.final_url ).replace( /[\/?#:&=]+/g, '-' ) + ' – ' + date;
+				}
+			} )
+			.on( 'afterprint.bonsai_bsgc', function () {
+				document.title = originalTitle;
+			} );
 
 		launch( BSGC.launch );
 	} );

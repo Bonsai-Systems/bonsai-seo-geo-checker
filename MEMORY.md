@@ -17,6 +17,8 @@ Decisions, gotchas and open items that aren't obvious from the code. Keep entrie
 - **2026-10-02 — Checks carry a separate `fix`.** The finding and the fix used to share `message`. Splitting them gives a cleaner table and better Claude input. The fix list prompt now leads with the 1–3 changes that matter most (adapted from OpenSEO's `seo-audit` skill).
 - **2026-10-02 — Broken link test is a capped sample with `wp_safe_remote_head`.** 10 links and a 20s budget keep the main request under host timeouts. Query-string links are skipped so the test can't trigger add-to-cart or logout. It runs sequentially because parallel `Requests::request_multiple()` would bypass the SSRF guard.
 - **2026-10-02 — hreflang and LocalBusiness checks only appear when relevant.** Most Bonsai sites are single-language and many aren't local, so an unscored "not present" row would just be noise.
+- **2026-10-02 — PDF is the browser's print-to-PDF, not a server-side PDF library.** A cover page and a condensed passes list are rendered into the report as `.bsgc-print-only` blocks. Print CSS hides pass/info rows and categories with nothing to fix. No dependency, and the PDF always matches the on-screen report.
+- **2026-10-02 — Report branding is a setting, not hardcoded.** Bonsai white-labels for Realityhouse, SPS, Web Heads and others, so each install can use its own logo and "Prepared by" name, or none.
 - **2026-09-29 — Default model Haiku 4.5.** It's cheap enough for fix lists; override via `BSGC_CLAUDE_MODEL`.
 
 ## Gotchas
@@ -25,6 +27,7 @@ Decisions, gotchas and open items that aren't obvious from the code. Keep entrie
 - Hosts with a hard 30s proxy timeout can cut off PageSpeed even with `set_time_limit( 150 )`.
 - Sites behind aggressive bot protection return 403 to server-side requests. The tool reports the block instead of auditing.
 - The block editor doesn't re-render meta boxes after saving. A newly published post shows "publish first" until the screen is reloaded.
+- Page numbers on the PDF use CSS `@page` margin boxes, which only Chrome/Edge 131+ support. Other browsers just leave them off. Browsers also add their own header/footer (URL, date) unless "Headers and footers" is unticked in the print dialog.
 - Schema is read from static HTML only, so JS-injected JSON-LD won't be detected. Point users to Rich Results Test.
 
 ## Open items / tech debt

@@ -132,6 +132,7 @@ class BSGC_Admin {
 					'hasAi'       => '' !== BSGC_Settings::get( 'anthropic_key' ),
 					'settingsUrl' => BSGC_Settings::settings_url(),
 					'signOff'     => $user->first_name ? $user->first_name : $user->display_name,
+					'brand'       => BSGC_Settings::report_brand(),
 					'pageUrl'     => self::page_url(),
 					'launch'      => self::launch(),
 				)

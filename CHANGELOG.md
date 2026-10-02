@@ -13,10 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - hreflang check, shown only when the page has hreflang tags: invalid codes, `-uk` instead of `-gb`, duplicate codes, relative URLs and missing self-reference.
 - LocalBusiness details check, shown only when LocalBusiness schema is present: address, telephone and opening hours.
 - `BSGC_Fetcher::status()` for lightweight status checks.
+- Client-ready PDF report. Printing now produces an A4 cover page with the logo, page URL, score, Claude's summary, date and "Prepared by"; then category scores, the fix list and only the warnings and failures with their fixes; then passing checks and notes condensed into "Already in good shape". Page numbers in Chrome/Edge 131+.
+- PDF file name set from the page and date (`SEO report – example.co.uk-page – YYYY-MM-DD`) instead of the admin page title.
+- "PDF reports" settings card: branding (Bonsai, custom logo from the Media Library, or none) and a "Prepared by" name, for white-label reports.
 
 ### Changed
 - Checks now have a separate `fix` field. `message` holds the finding only, and the report table shows "Fix:" under warnings and failures. Older saved reports still display normally.
 - The Claude fix-list prompt leads with the one to three changes that matter most, says how each fix helps (indexing, ranking, clicks or AI citations), leaves out cosmetic items rather than padding, and treats missing schema cautiously. Claude now also receives each issue's suggested fix and weight.
+
+### Fixed
+- The "Fix:" line under each check reused the `.bsgc-fix` class from the Claude fix list, so it picked up that list's styling. It now uses `.bsgc-check-fix`.
 
 ## [1.2.0] - 2026-09-30
 

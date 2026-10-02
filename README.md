@@ -103,7 +103,8 @@ The Composer autoloader has its own fixed suffix (`ComposerAutoloaderInitBonsaiS
 ## Using it
 
 - **Copy client summary** puts plain text on the clipboard: the score, the AI summary and the fixes in priority order, signed off with the current user's first name.
-- **Print or save as PDF** uses print styles that strip out the wp-admin chrome.
+- **Print or save as PDF** produces a client-ready A4 report: a cover page (logo, page URL, score, Claude's summary, date and "Prepared by"), category scores and the fix list, then only the warnings and failures with their fixes. Passing checks and notes are condensed into "Already in good shape" at the end. The file name defaults to `SEO report – example.co.uk-page – YYYY-MM-DD`. Untick the browser's "Headers and footers" option for the cleanest result.
+- The cover branding is set under **Settings → SEO/GEO checker → PDF reports**: Bonsai, a custom logo from the Media Library (for white-label clients) or no logo, plus an optional "Prepared by" name.
 - Reports are saved in a hidden `bsgc_report` post type. The last 25 are listed under the form, where you can view or delete them.
 
 ## Checking from the editor

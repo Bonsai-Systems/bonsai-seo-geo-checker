@@ -11,6 +11,9 @@
  * Saved keys are never sent back to the browser. The field is always empty;
  * leaving it blank keeps the stored key.
  *
+ * The "PDF reports" card sets the branding on printed reports (cover logo and
+ * "Prepared by"), so white-label installs can swap Bonsai for the agency's own.
+ *
  * @package BonsaiSEOGEOChecker
  */
 
@@ -22,6 +25,7 @@ defined( 'ABSPATH' ) || exit;
 class BSGC_Settings {
 
 	const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
+	const DEFAULT_BY    = 'The Bonsai Digital Collective';
 	const OPTION        = 'bsgc_settings';
 	const GROUP         = 'bsgc_settings';
 	const SLUG          = 'bsgc-settings';
@@ -82,11 +86,17 @@ class BSGC_Settings {
 				'title' => 'PageSpeed Insights',
 				'intro' => 'Google\'s mobile performance run, used for the Core Web Vitals checks.',
 			),
+			'report'    => array(
+				'title' => 'PDF reports',
+				'intro' => 'Branding on the cover of printed and PDF reports. Use your own logo for white-label clients, or none for a neutral report.',
+			),
 		);
 	}
 
 	/**
 	 * Field definitions, in display order.
+	 *
+	 * Types: secret (masked key), text, choice (radio buttons), media (image from the Media Library).
 	 *
 	 * @return array
 	 */
@@ -94,18 +104,47 @@ class BSGC_Settings {
 		return array(
 			'anthropic_key' => array(
 				'section' => 'claude',
+				'type'    => 'secret',
 				'label'   => 'Anthropic API key',
 				'help'    => 'Needed for the fix list. Better: define BSGC_ANTHROPIC_KEY in wp-config.php, which overrides this field and keeps the key out of the database.',
 			),
 			'model'         => array(
-				'section' => 'claude',
-				'label'   => 'Claude model',
-				'help'    => 'Haiku is plenty for fix lists and costs a fraction of a penny per report.',
+				'section'     => 'claude',
+				'type'        => 'text',
+				'label'       => 'Claude model',
+				'placeholder' => self::DEFAULT_MODEL,
+				'help'        => 'Haiku is plenty for fix lists and costs a fraction of a penny per report.',
 			),
 			'psi_key'       => array(
 				'section' => 'pagespeed',
+				'type'    => 'secret',
 				'label'   => 'PageSpeed Insights API key',
 				'help'    => 'Free from Google Cloud Console. Optional, but without one Google rate-limits PageSpeed requests heavily. BSGC_PSI_KEY in wp-config.php overrides this.',
+			),
+			'report_brand'  => array(
+				'section' => 'report',
+				'type'    => 'choice',
+				'label'   => 'Branding',
+				'choices' => array(
+					'bonsai' => 'The Bonsai Digital Collective',
+					'custom' => 'Custom logo (below)',
+					'none'   => 'No logo',
+				),
+				'default' => 'bonsai',
+				'help'    => 'Shown on the cover page of printed and PDF reports.',
+			),
+			'report_logo'   => array(
+				'section' => 'report',
+				'type'    => 'media',
+				'label'   => 'Custom logo',
+				'help'    => 'Used when Branding is set to Custom logo. A wide PNG or SVG on a transparent or white background prints best.',
+			),
+			'report_by'     => array(
+				'section'     => 'report',
+				'type'        => 'text',
+				'label'       => 'Prepared by',
+				'placeholder' => self::DEFAULT_BY,
+				'help'        => 'Agency name on the cover. Leave blank to use The Bonsai Digital Collective with Bonsai branding, or to leave it off with the other options.',
 			),
 		);
 	}
@@ -155,14 +194,19 @@ class BSGC_Settings {
 	}
 
 	/**
-	 * Load the shared admin styles on our settings screen.
+	 * Load the shared admin styles, the media modal and the logo picker on our settings screen.
 	 *
 	 * @param string $hook Current admin page hook.
 	 */
 	public static function assets( $hook ) {
-		if ( self::HOOK === $hook ) {
-			BSGC_Admin_UI::enqueue();
+		if ( self::HOOK !== $hook ) {
+			return;
 		}
+
+		BSGC_Admin_UI::enqueue();
+		wp_enqueue_style( 'bsgc-admin', BSGC_URL . 'assets/admin.css', array( BSGC_Admin_UI::HANDLE ), BSGC_VERSION );
+		wp_enqueue_media();
+		wp_enqueue_script( 'bsgc-settings', BSGC_URL . 'assets/settings.js', array( 'jquery' ), BSGC_VERSION, true );
 	}
 
 	/**
@@ -200,11 +244,11 @@ class BSGC_Settings {
 		$stored = self::stored();
 		$clean  = array();
 
-		foreach ( array_keys( self::MAP ) as $key ) {
+		foreach ( self::fields() as $key => $field ) {
 			$old = isset( $stored[ $key ] ) ? (string) $stored[ $key ] : '';
 
 			// Disabled fields aren't submitted, so keep whatever was there.
-			if ( defined( self::MAP[ $key ] ) ) {
+			if ( isset( self::MAP[ $key ] ) && defined( self::MAP[ $key ] ) ) {
 				$clean[ $key ] = $old;
 				continue;
 			}
@@ -212,7 +256,12 @@ class BSGC_Settings {
 			// options.php has already unslashed the submitted values.
 			$new = isset( $input[ $key ] ) ? trim( sanitize_text_field( $input[ $key ] ) ) : '';
 
-			if ( in_array( $key, self::SECRETS, true ) ) {
+			if ( 'choice' === $field['type'] ) {
+				$new = isset( $field['choices'][ $new ] ) ? $new : $field['default'];
+			} elseif ( 'media' === $field['type'] ) {
+				// Only keep IDs of real image attachments.
+				$new = absint( $new ) && wp_attachment_is_image( absint( $new ) ) ? (string) absint( $new ) : '';
+			} elseif ( in_array( $key, self::SECRETS, true ) ) {
 				if ( ! empty( $input[ 'clear_' . $key ] ) ) {
 					$new = '';
 				} elseif ( '' === $new ) {
@@ -232,18 +281,18 @@ class BSGC_Settings {
 	/**
 	 * Get a setting. Constant first, then saved option, then default.
 	 *
-	 * @param string $key Setting key from self::MAP.
+	 * @param string $key Setting key from self::fields().
 	 * @return string
 	 */
 	public static function get( $key ) {
-		if ( ! isset( self::MAP[ $key ] ) ) {
+		$fields = self::fields();
+
+		if ( ! isset( $fields[ $key ] ) ) {
 			return '';
 		}
 
-		$constant = self::MAP[ $key ];
-
-		if ( defined( $constant ) ) {
-			$value = (string) constant( $constant );
+		if ( isset( self::MAP[ $key ] ) && defined( self::MAP[ $key ] ) ) {
+			$value = (string) constant( self::MAP[ $key ] );
 		} else {
 			$stored = self::stored();
 			$value  = isset( $stored[ $key ] ) ? (string) $stored[ $key ] : '';
@@ -255,7 +304,41 @@ class BSGC_Settings {
 			$value = self::DEFAULT_MODEL;
 		}
 
+		if ( '' === $value && isset( $fields[ $key ]['default'] ) ) {
+			$value = $fields[ $key ]['default'];
+		}
+
 		return $value;
+	}
+
+	/**
+	 * Branding for the printed report cover.
+	 *
+	 * @return array { logo: URL or '', logoAlt: string, preparedBy: string }
+	 */
+	public static function report_brand() {
+		$brand = self::get( 'report_brand' );
+		$by    = self::get( 'report_by' );
+		$logo  = '';
+		$alt   = '';
+
+		if ( 'bonsai' === $brand ) {
+			$logo = BSGC_URL . 'assets/bonsai-avatar.jpg';
+			$alt  = self::DEFAULT_BY;
+			$by   = '' !== $by ? $by : self::DEFAULT_BY;
+		} elseif ( 'custom' === $brand && self::get( 'report_logo' ) ) {
+			$id   = absint( self::get( 'report_logo' ) );
+			$url  = wp_get_attachment_image_url( $id, 'medium_large' );
+			$logo = $url ? $url : '';
+			$alt  = trim( (string) get_post_meta( $id, '_wp_attachment_image_alt', true ) );
+			$alt  = '' !== $alt ? $alt : $by;
+		}
+
+		return array(
+			'logo'       => $logo,
+			'logoAlt'    => $alt,
+			'preparedBy' => $by,
+		);
 	}
 
 	/**
@@ -316,24 +399,31 @@ class BSGC_Settings {
 	 * Render one settings row.
 	 *
 	 * @param string $key    Setting key.
-	 * @param array  $field  Label and help text.
+	 * @param array  $field  Field definition from self::fields().
 	 * @param array  $stored Stored option values.
 	 */
 	private static function render_field( $key, $field, $stored ) {
-		$id        = 'bsgc-' . str_replace( '_', '-', $key );
-		$name      = self::OPTION . '[' . $key . ']';
-		$constant  = self::MAP[ $key ];
-		$is_const  = defined( $constant );
-		$is_secret = in_array( $key, self::SECRETS, true );
-		$saved     = isset( $stored[ $key ] ) ? (string) $stored[ $key ] : '';
+		$id       = 'bsgc-' . str_replace( '_', '-', $key );
+		$name     = self::OPTION . '[' . $key . ']';
+		$constant = isset( self::MAP[ $key ] ) ? self::MAP[ $key ] : '';
+		$is_const = $constant && defined( $constant );
+		$saved    = isset( $stored[ $key ] ) ? (string) $stored[ $key ] : '';
+		$type     = $field['type'];
 		?>
 		<tr>
-			<th scope="row"><label for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $field['label'] ); ?></label></th>
+			<th scope="row">
+				<?php if ( 'choice' === $type ) : ?>
+					<?php echo esc_html( $field['label'] ); ?>
+				<?php else : ?>
+					<label for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $field['label'] ); ?></label>
+				<?php endif; ?>
+			</th>
 			<td>
 				<?php if ( $is_const ) : ?>
-					<input type="text" id="<?php echo esc_attr( $id ); ?>" class="regular-text" value="<?php echo esc_attr( $is_secret ? 'Set in wp-config.php' : (string) constant( $constant ) ); ?>" disabled aria-describedby="<?php echo esc_attr( $id ); ?>-help">
+					<input type="text" id="<?php echo esc_attr( $id ); ?>" class="regular-text" value="<?php echo esc_attr( 'secret' === $type ? 'Set in wp-config.php' : (string) constant( $constant ) ); ?>" disabled aria-describedby="<?php echo esc_attr( $id ); ?>-help">
 					<p class="description" id="<?php echo esc_attr( $id ); ?>-help">Controlled by <code><?php echo esc_html( $constant ); ?></code> in wp-config.php. Remove the constant to manage it here.</p>
-				<?php elseif ( $is_secret ) : ?>
+
+				<?php elseif ( 'secret' === $type ) : ?>
 					<?php
 					// Never print the saved key; just enough of it to recognise which one is in use.
 					$placeholder = '' !== $saved ? 'Saved key ending ' . substr( $saved, -4 ) . ' – leave blank to keep it' : 'Not set';
@@ -343,8 +433,31 @@ class BSGC_Settings {
 						<p><label><input type="checkbox" name="<?php echo esc_attr( self::OPTION . '[clear_' . $key . ']' ); ?>" value="1"> Remove saved key</label></p>
 					<?php endif; ?>
 					<p class="description" id="<?php echo esc_attr( $id ); ?>-help"><?php echo esc_html( $field['help'] ); ?></p>
+
+				<?php elseif ( 'choice' === $type ) : ?>
+					<?php $current = '' !== $saved ? $saved : $field['default']; ?>
+					<fieldset aria-describedby="<?php echo esc_attr( $id ); ?>-help">
+						<legend class="screen-reader-text"><?php echo esc_html( $field['label'] ); ?></legend>
+						<?php foreach ( $field['choices'] as $value => $label ) : ?>
+							<label><input type="radio" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $value ); ?>" <?php checked( $current, $value ); ?>> <?php echo esc_html( $label ); ?></label><br>
+						<?php endforeach; ?>
+					</fieldset>
+					<p class="description" id="<?php echo esc_attr( $id ); ?>-help"><?php echo esc_html( $field['help'] ); ?></p>
+
+				<?php elseif ( 'media' === $type ) : ?>
+					<?php $preview = $saved ? wp_get_attachment_image_url( absint( $saved ), 'medium' ) : ''; ?>
+					<div class="bsgc-media">
+						<input type="hidden" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $preview ? $saved : '' ); ?>">
+						<img class="bsgc-media__preview" src="<?php echo esc_url( $preview ? $preview : '' ); ?>" alt="Current logo"<?php echo $preview ? '' : ' hidden'; ?>>
+						<p>
+							<button type="button" class="button bsgc-media__choose" aria-describedby="<?php echo esc_attr( $id ); ?>-help"><?php echo $preview ? 'Change logo' : 'Choose logo'; ?></button>
+							<button type="button" class="button-link bsgc-media__remove"<?php echo $preview ? '' : ' hidden'; ?>>Remove</button>
+						</p>
+					</div>
+					<p class="description" id="<?php echo esc_attr( $id ); ?>-help"><?php echo esc_html( $field['help'] ); ?></p>
+
 				<?php else : ?>
-					<input type="text" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" class="regular-text" value="<?php echo esc_attr( $saved ); ?>" placeholder="<?php echo esc_attr( self::DEFAULT_MODEL ); ?>" spellcheck="false" aria-describedby="<?php echo esc_attr( $id ); ?>-help">
+					<input type="text" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" class="regular-text" value="<?php echo esc_attr( $saved ); ?>" placeholder="<?php echo esc_attr( isset( $field['placeholder'] ) ? $field['placeholder'] : '' ); ?>" spellcheck="false" aria-describedby="<?php echo esc_attr( $id ); ?>-help">
 					<p class="description" id="<?php echo esc_attr( $id ); ?>-help"><?php echo esc_html( $field['help'] ); ?></p>
 				<?php endif; ?>
 			</td>
