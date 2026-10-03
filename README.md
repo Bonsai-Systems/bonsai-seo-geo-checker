@@ -1,6 +1,6 @@
 # Bonsai SEO/GEO Checker
 
-This is an internal tool for auditing a single URL. It lives under **Tools → SEO/GEO checker**, and only administrators (`manage_options`) can use it.
+This is an internal tool for auditing a single URL. It lives under **Bonsai → SEO/GEO checker**, and only administrators (`manage_options`) can use it.
 
 Built by [The Bonsai Digital Collective](https://bonsaidigitalcollective.co.uk/). Source: [Bonsai-Systems/bonsai-seo-geo-checker](https://github.com/Bonsai-Systems/bonsai-seo-geo-checker).
 
@@ -47,7 +47,7 @@ Built by [The Bonsai Digital Collective](https://bonsaidigitalcollective.co.uk/)
 
 ### Option 1: Settings screen (quickest)
 
-Go to **Settings → SEO/GEO checker**. There's also a **Settings** link on the plugin's row on the Plugins screen. Paste in the keys and save. You don't need ACF.
+Go to **Bonsai → SEO/GEO checker → Settings**. There's also a **Settings** link on the plugin's row on the Plugins screen. Paste in the keys and save. You don't need ACF.
 
 The keys are treated like passwords:
 
@@ -73,6 +73,14 @@ Anything defined here overrides the Settings screen. The matching field is locke
 
 - **Auditing any site from one place:** install it on an internal site, such as the Bonsai site or a tools install.
 - **Using the editor button on a client's own pages:** install it on that client site too. Use `wp-config.php` for the keys there, and remember the API usage is billed to whoever owns the keys.
+
+## Bonsai menu
+
+This plugin's screens live in the shared **Bonsai** admin menu, provided by [Bonsai Hub](https://github.com/Bonsai-Systems/bonsai-hub). A copy of the hub is bundled in `lib/bonsai-hub/`, so this plugin sets up the menu on its own. Other Bonsai plugins appear alongside it, and **Bonsai → Plugins** installs, activates and deactivates the rest of the suite.
+
+- Don't edit `lib/bonsai-hub/` by hand. Change the bonsai-hub repo and run its `bin/sync.sh`.
+- Old `tools.php?page=bsgc` and `options-general.php?page=bsgc-settings` links redirect to the Checker and Settings tabs.
+- Release zips must include `lib/`.
 
 ## Updates
 
@@ -104,7 +112,7 @@ The Composer autoloader has its own fixed suffix (`ComposerAutoloaderInitBonsaiS
 
 - **Copy client summary** puts plain text on the clipboard: the score, the AI summary and the fixes in priority order, signed off with the current user's first name.
 - **Print or save as PDF** produces a client-ready A4 report: a cover page (logo, page URL, score, Claude's summary, date and "Prepared by"), category scores and the fix list, then only the warnings and failures with their fixes. Passing checks and notes are condensed into "Already in good shape" at the end. The file name defaults to `SEO report – example.co.uk-page – YYYY-MM-DD`. Untick the browser's "Headers and footers" option for the cleanest result.
-- The cover branding is set under **Settings → SEO/GEO checker → PDF reports**: Bonsai, a custom logo from the Media Library (for white-label clients) or no logo, plus an optional "Prepared by" name.
+- The cover branding is set under **Bonsai → SEO/GEO checker → Settings → PDF reports**: Bonsai, a custom logo from the Media Library (for white-label clients) or no logo, plus an optional "Prepared by" name.
 - Reports are saved in a hidden `bsgc_report` post type. The last 25 are listed under the form, where you can view or delete them.
 
 ## Checking from the editor

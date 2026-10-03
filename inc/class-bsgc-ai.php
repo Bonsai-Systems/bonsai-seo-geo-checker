@@ -48,7 +48,7 @@ PROMPT;
 		$key = BSGC_Settings::get( 'anthropic_key' );
 
 		if ( '' === $key ) {
-			return new WP_Error( 'bsgc_no_key', 'Add an Anthropic API key in Settings → SEO/GEO checker (or BSGC_ANTHROPIC_KEY in wp-config.php).' );
+			return new WP_Error( 'bsgc_no_key', 'Add an Anthropic API key under Bonsai → SEO/GEO checker → Settings (or BSGC_ANTHROPIC_KEY in wp-config.php).' );
 		}
 
 		$categories = BSGC_Analyser::CATEGORIES;

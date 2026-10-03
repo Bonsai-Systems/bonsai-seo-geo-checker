@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-03
+
 ### Added
+- Bundled Bonsai Hub 1.0.0 (`lib/bonsai-hub/`): a shared top-level **Bonsai** admin menu with a left-hand nav for every Bonsai plugin, plus a **Plugins** screen to install, activate and deactivate the rest of the suite from GitHub releases.
 - Broken internal links check: tests up to 10 unique same-site links (HEAD with a GET fallback, via `wp_safe_remote_head`), skipping query-string, admin, login and feed links. Bot-protection responses and timeouts count as "couldn't be verified", not broken.
 - Canonical conflict detection between the HTML `<link rel="canonical">` and the HTTP `Link` header. A canonical set only in the header is now recognised.
 - hreflang check, shown only when the page has hreflang tags: invalid codes, `-uk` instead of `-gb`, duplicate codes, relative URLs and missing self-reference.
@@ -18,11 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - "PDF reports" settings card: branding (Bonsai, custom logo from the Media Library, or none) and a "Prepared by" name, for white-label reports.
 
 ### Changed
+- The checker (was **Tools → SEO/GEO checker**) and its settings (was **Settings → SEO/GEO checker**) are now one screen, **Bonsai → SEO/GEO checker** (`admin.php?page=bsgc`), with Checker and Settings tabs. Both old URLs redirect, and editor-box / admin-bar run links keep working. No option or field changes.
+- `assets/bonsai-admin-ui.css` is no longer the canonical design system; it now lives in the bonsai-hub repo and ships inside `lib/bonsai-hub/`.
 - Checks now have a separate `fix` field. `message` holds the finding only, and the report table shows "Fix:" under warnings and failures. Older saved reports still display normally.
 - The Claude fix-list prompt leads with the one to three changes that matter most, says how each fix helps (indexing, ranking, clicks or AI citations), leaves out cosmetic items rather than padding, and treats missing schema cautiously. Claude now also receives each issue's suggested fix and weight.
 
 ### Fixed
 - The "Fix:" line under each check reused the `.bsgc-fix` class from the Claude fix list, so it picked up that list's styling. It now uses `.bsgc-check-fix`.
+
+### Removed
+- `inc/class-bsgc-admin-ui.php` and `assets/bonsai-admin-ui.css`. The hub provides the header and design system. `assets/bonsai-avatar.jpg` stays: it's the "Bonsai" PDF report cover logo.
 
 ## [1.2.0] - 2026-09-30
 

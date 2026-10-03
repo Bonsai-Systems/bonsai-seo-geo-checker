@@ -1,6 +1,7 @@
 <?php
 /**
- * Settings: native Settings API page under Settings → SEO/GEO checker, with
+ * Settings: native Settings API form on the Settings tab of Bonsai →
+ * SEO/GEO checker (registered in BSGC_Admin::register_hub_module()), with
  * wp-config.php constants taking priority.
  *
  * Constants (recommended for keys so they never sit in the database):
@@ -28,8 +29,7 @@ class BSGC_Settings {
 	const DEFAULT_BY    = 'The Bonsai Digital Collective';
 	const OPTION        = 'bsgc_settings';
 	const GROUP         = 'bsgc_settings';
-	const SLUG          = 'bsgc-settings';
-	const HOOK          = 'settings_page_bsgc-settings';
+	const SLUG          = 'bsgc-settings'; // Old Settings sub-page slug, redirected by the hub.
 
 	/**
 	 * Setting key => wp-config.php constant that overrides it.
@@ -66,8 +66,6 @@ class BSGC_Settings {
 	public static function init() {
 		add_action( 'admin_init', array( __CLASS__, 'maybe_migrate' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register' ) );
-		add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
-		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'assets' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( BSGC_FILE ), array( __CLASS__, 'action_links' ) );
 	}
 
@@ -187,24 +185,10 @@ class BSGC_Settings {
 	}
 
 	/**
-	 * Register the Settings sub-page.
+	 * Load the media modal and the logo picker on the Settings tab. Called
+	 * from BSGC_Admin::assets(), which has already loaded the styles.
 	 */
-	public static function menu() {
-		add_options_page( 'SEO/GEO checker settings', 'SEO/GEO checker', 'manage_options', self::SLUG, array( __CLASS__, 'render' ) );
-	}
-
-	/**
-	 * Load the shared admin styles, the media modal and the logo picker on our settings screen.
-	 *
-	 * @param string $hook Current admin page hook.
-	 */
-	public static function assets( $hook ) {
-		if ( self::HOOK !== $hook ) {
-			return;
-		}
-
-		BSGC_Admin_UI::enqueue();
-		wp_enqueue_style( 'bsgc-admin', BSGC_URL . 'assets/admin.css', array( BSGC_Admin_UI::HANDLE ), BSGC_VERSION );
+	public static function assets() {
 		wp_enqueue_media();
 		wp_enqueue_script( 'bsgc-settings', BSGC_URL . 'assets/settings.js', array( 'jquery' ), BSGC_VERSION, true );
 	}
@@ -347,28 +331,18 @@ class BSGC_Settings {
 	 * @return string
 	 */
 	public static function settings_url() {
-		return admin_url( 'options-general.php?page=' . self::SLUG );
+		return add_query_arg( 'tab', 'settings', BSGC_Admin::page_url() );
 	}
 
 	/**
-	 * Render the settings screen.
+	 * Render the Settings tab. The hub prints the page wrap, header, notices
+	 * and tabs around it, and has already checked manage_options.
 	 */
 	public static function render() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
 		$stored = self::stored();
 		$fields = self::fields();
 		?>
-		<div class="wrap bonsai-ui bonsai-ui--narrow">
-			<?php
-			BSGC_Admin_UI::header(
-				'SEO/GEO checker settings',
-				'Checks a single page for search basics, AI visibility (GEO) and mobile performance, then uses Claude to write a prioritised fix list. Run checks from <a href="' . esc_url( BSGC_Admin::page_url() ) . '">Tools → SEO/GEO checker</a> or the box on any published page\'s edit screen.'
-			);
-			?>
-
+		<div class="bsgc-settings">
 			<form method="post" action="options.php">
 				<?php settings_fields( self::GROUP ); ?>
 

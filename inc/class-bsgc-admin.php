@@ -1,6 +1,10 @@
 <?php
 /**
- * Admin screen (Tools → SEO/GEO checker) and AJAX endpoints.
+ * Admin screen (Bonsai → SEO/GEO checker, Checker tab) and AJAX endpoints.
+ *
+ * The screen is registered with the shared Bonsai Hub (lib/bonsai-hub/),
+ * which prints the header, plugin nav and the Checker / Settings tab bar.
+ * The Settings tab is BSGC_Settings::render().
  *
  * @package BonsaiSEOGEOChecker
  */
@@ -13,14 +17,12 @@ defined( 'ABSPATH' ) || exit;
 class BSGC_Admin {
 
 	const SLUG = 'bsgc';
-	const HOOK = 'tools_page_bsgc';
 
 	/**
 	 * Hook in.
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
-		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'assets' ) );
+		add_filter( 'bonsai_hub_modules', array( __CLASS__, 'register_hub_module' ) );
 
 		foreach ( array( 'run_check', 'run_pagespeed', 'run_ai', 'get_report', 'delete_report' ) as $action ) {
 			add_action( 'wp_ajax_bsgc_' . $action, array( __CLASS__, 'ajax_' . $action ) );
@@ -28,10 +30,36 @@ class BSGC_Admin {
 	}
 
 	/**
-	 * Register the Tools page.
+	 * Register the screen with the Bonsai menu: Checker and Settings tabs.
+	 * The hub redirects the old tools.php?page=bsgc and
+	 * options-general.php?page=bsgc-settings URLs here.
+	 *
+	 * @param array $modules Modules registered so far.
+	 * @return array
 	 */
-	public static function menu() {
-		add_management_page( 'SEO/GEO checker', 'SEO/GEO checker', 'manage_options', self::SLUG, array( __CLASS__, 'render' ) );
+	public static function register_hub_module( $modules ) {
+		$modules[ self::SLUG ] = array(
+			'label'       => 'SEO/GEO checker',
+			'description' => 'Checks one page for search basics and AI visibility, tests mobile performance with PageSpeed Insights, then writes a prioritised fix list.',
+			'version'     => BSGC_VERSION,
+			'repo'        => 'https://github.com/Bonsai-Systems/bonsai-seo-geo-checker',
+			'capability'  => 'manage_options',
+			'enqueue'     => array( __CLASS__, 'assets' ),
+			'legacy'      => array( BSGC_Settings::SLUG => 'settings' ),
+			'tabs'        => array(
+				'check'    => array(
+					'label'  => 'Checker',
+					'render' => array( __CLASS__, 'render' ),
+				),
+				'settings' => array(
+					'label'       => 'Settings',
+					'description' => 'API keys, Claude model and PDF report branding. Checks also run from the box on any published page\'s edit screen.',
+					'render'      => array( 'BSGC_Settings', 'render' ),
+				),
+			),
+		);
+
+		return $modules;
 	}
 
 	/**
@@ -40,7 +68,7 @@ class BSGC_Admin {
 	 * @return string
 	 */
 	public static function page_url() {
-		return admin_url( 'tools.php?page=' . self::SLUG );
+		return admin_url( 'admin.php?page=' . self::SLUG );
 	}
 
 	/**
@@ -106,17 +134,19 @@ class BSGC_Admin {
 	}
 
 	/**
-	 * Enqueue CSS/JS on our screen only.
+	 * Enqueue CSS/JS for the current tab. Called by the hub on our screen
+	 * only, after the shared Bonsai styles.
 	 *
-	 * @param string $hook Current admin page hook.
+	 * @param string $tab Current tab slug.
 	 */
-	public static function assets( $hook ) {
-		if ( self::HOOK !== $hook ) {
+	public static function assets( $tab ) {
+		wp_enqueue_style( 'bsgc-admin', BSGC_URL . 'assets/admin.css', array( 'bonsai-hub-ui' ), BSGC_VERSION );
+
+		if ( 'settings' === $tab ) {
+			BSGC_Settings::assets();
 			return;
 		}
 
-		BSGC_Admin_UI::enqueue();
-		wp_enqueue_style( 'bsgc-admin', BSGC_URL . 'assets/admin.css', array( BSGC_Admin_UI::HANDLE ), BSGC_VERSION );
 		wp_enqueue_script( 'bsgc-admin', BSGC_URL . 'assets/admin.js', array( 'jquery' ), BSGC_VERSION, true );
 
 		$user = wp_get_current_user();
@@ -142,29 +172,13 @@ class BSGC_Admin {
 	}
 
 	/**
-	 * Render the screen.
+	 * Render the Checker tab. The hub prints the page wrap, header, notices
+	 * and tabs around it, and has already checked manage_options.
 	 */
 	public static function render() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
 		$recent = BSGC_Reports::recent( 25 );
 		?>
-		<div class="wrap bonsai-ui bsgc">
-			<?php
-			BSGC_Admin_UI::header(
-				'SEO/GEO checker',
-				'Checks one page for search basics and AI visibility, tests mobile performance with PageSpeed Insights, then writes a prioritised fix list.',
-				array(
-					array(
-						'label' => 'Settings',
-						'url'   => BSGC_Settings::settings_url(),
-					),
-				)
-			);
-			?>
-
+		<div class="bsgc">
 			<form id="bsgc-form" class="bsgc-form" novalidate>
 				<label for="bsgc-url">Page URL</label>
 				<div class="bsgc-form__row">

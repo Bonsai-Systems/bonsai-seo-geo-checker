@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       Bonsai SEO/GEO Checker
  * Plugin URI:        https://github.com/Bonsai-Systems/bonsai-seo-geo-checker
- * Description:       Internal single-URL audit tool: search basics, AI visibility (GEO), PageSpeed Insights and a Claude-written fix list. Lives under Tools → SEO/GEO checker.
- * Version:           1.2.0
+ * Description:       Internal single-URL audit tool: search basics, AI visibility (GEO), PageSpeed Insights and a Claude-written fix list. Lives under Bonsai → SEO/GEO checker.
+ * Version:           1.3.0
  * Author:            The Bonsai Digital Collective
  * Author URI:        https://bonsaidigitalcollective.co.uk/
  * Update URI:        https://github.com/Bonsai-Systems/bonsai-seo-geo-checker
@@ -32,13 +32,15 @@ if ( defined( 'BSGC_VERSION' ) ) {
 	return;
 }
 
-define( 'BSGC_VERSION', '1.2.0' );
+define( 'BSGC_VERSION', '1.3.0' );
 define( 'BSGC_FILE', __FILE__ );
 define( 'BSGC_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BSGC_URL', plugin_dir_url( __FILE__ ) );
 
+// Shared Bonsai admin menu, page shell and suite installer. Bundled copy of
+// the bonsai-hub repo; update it with bonsai-hub/bin/sync.sh, not by hand.
+require_once BSGC_PATH . 'lib/bonsai-hub/bonsai-hub.php';
 require_once BSGC_PATH . 'inc/class-bsgc-updater.php';
-require_once BSGC_PATH . 'inc/class-bsgc-admin-ui.php';
 require_once BSGC_PATH . 'inc/class-bsgc-settings.php';
 require_once BSGC_PATH . 'inc/class-bsgc-fetcher.php';
 require_once BSGC_PATH . 'inc/class-bsgc-robots.php';

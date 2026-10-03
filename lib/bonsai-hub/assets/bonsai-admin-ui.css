@@ -3,11 +3,13 @@
  *
  * Version: 1.0.0
  *
- * Canonical copy lives in bonsai-seo-geo-checker/assets/bonsai-admin-ui.css.
- * Every Bonsai plugin ships its own identical copy (no cross-plugin
- * dependency) and only enqueues it on its own screens, so identical class
- * names never collide. Change the canonical file first, bump the version
- * above, then copy it into the other plugins.
+ * Canonical copy lives in the bonsai-hub repo (assets/bonsai-admin-ui.css)
+ * and ships to every plugin inside its bundled lib/bonsai-hub/. Only the
+ * newest hub copy on a site is loaded, on hub screens only. Change it in
+ * bonsai-hub, bump the hub version, then run bin/sync.sh.
+ *
+ * Plugins not yet moved into the hub still carry their own copy in
+ * assets/; those copies are frozen at 1.0.0 and go when each plugin moves.
  *
  * Everything is scoped under .bonsai-ui (the page wrapper) so nothing leaks
  * into the rest of wp-admin.

@@ -47,7 +47,7 @@ class BSGC_PageSpeed {
 
 		if ( 200 !== $code ) {
 			if ( 429 === $code ) {
-				return new WP_Error( 'bsgc_psi_rate', 'PageSpeed Insights rate limit hit. Add a free API key in Settings → SEO/GEO checker.' );
+				return new WP_Error( 'bsgc_psi_rate', 'PageSpeed Insights rate limit hit. Add a free API key under Bonsai → SEO/GEO checker → Settings.' );
 			}
 
 			$message = isset( $data['error']['message'] ) ? $data['error']['message'] : 'HTTP ' . $code;

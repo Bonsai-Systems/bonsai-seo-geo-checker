@@ -1,0 +1,214 @@
+/**
+ * Bonsai Hub layout: left-hand plugin nav, top tab bar and the Plugins
+ * screen catalogue. Builds on bonsai-admin-ui.css (tokens, header, cards),
+ * which loads first, and is scoped under .bonsai-ui like it.
+ */
+
+/* Page ----------------------------------------------------------------- */
+
+.bonsai-ui--hub {
+	max-width: 1340px;
+}
+
+.bonsai-hub {
+	display: grid;
+	grid-template-columns: 220px minmax(0, 1fr);
+	gap: 24px;
+	align-items: start;
+}
+
+/* Left nav ------------------------------------------------------------- */
+
+.bonsai-hub-nav {
+	position: sticky;
+	top: 48px; /* Clears the admin bar. */
+	padding: 8px;
+	background: var(--bonsai-ui-surface);
+	border: 1px solid var(--bonsai-ui-line);
+	border-radius: var(--bonsai-ui-radius);
+}
+
+.bonsai-hub-nav ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.bonsai-hub-nav li {
+	margin: 0;
+}
+
+.bonsai-hub-nav a {
+	display: block;
+	padding: 9px 12px;
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 1.4;
+	color: var(--bonsai-ui-text);
+	text-decoration: none;
+	border-left: 3px solid transparent;
+	border-radius: var(--bonsai-ui-radius-sm);
+}
+
+.bonsai-hub-nav a:hover {
+	color: var(--bonsai-ui-ink);
+	background: var(--bonsai-ui-subtle);
+}
+
+.bonsai-hub-nav a:focus {
+	color: var(--bonsai-ui-ink);
+	outline: 2px solid transparent; /* Keeps a visible focus ring in forced-colours mode. */
+	box-shadow: 0 0 0 2px var(--bonsai-ui-ink);
+}
+
+/* Weight and background mark the current item too, not just the pink bar. */
+.bonsai-hub-nav a[aria-current="page"] {
+	font-weight: 650;
+	color: var(--bonsai-ui-ink);
+	background: var(--bonsai-ui-subtle);
+	border-left-color: var(--bonsai-ui-accent);
+}
+
+.bonsai-hub-nav ul + .bonsai-hub-nav__footer {
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px solid var(--bonsai-ui-line-soft);
+}
+
+/* Tab bar -------------------------------------------------------------- */
+
+.bonsai-hub-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin: 0 0 24px;
+	border-bottom: 1px solid var(--bonsai-ui-line);
+}
+
+.bonsai-hub-tabs a {
+	margin-bottom: -1px;
+	padding: 10px 14px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--bonsai-ui-muted);
+	text-decoration: none;
+	border-bottom: 3px solid transparent;
+}
+
+.bonsai-hub-tabs a:hover {
+	color: var(--bonsai-ui-ink);
+}
+
+.bonsai-hub-tabs a:focus {
+	color: var(--bonsai-ui-ink);
+	outline: 2px solid transparent;
+	box-shadow: inset 0 0 0 2px var(--bonsai-ui-ink);
+}
+
+.bonsai-hub-tabs a[aria-current="page"] {
+	color: var(--bonsai-ui-ink);
+	border-bottom-color: var(--bonsai-ui-accent);
+}
+
+/* Tab description, above the tab's content. */
+.bonsai-hub-lead {
+	max-width: 70ch;
+	margin: 0 0 20px;
+	font-size: 14px;
+	line-height: 1.6;
+	color: var(--bonsai-ui-muted);
+}
+
+/* Plugins screen ------------------------------------------------------- */
+
+.bonsai-hub-catalogue {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: 20px;
+	margin: 0 0 24px;
+	padding: 0;
+	list-style: none;
+}
+
+.bonsai-hub-catalogue > .bonsai-hub-plugin {
+	display: flex;
+	flex-direction: column;
+	margin: 0;
+}
+
+/* Pushes every card's footer to the bottom so button rows line up. */
+.bonsai-hub-plugin__body {
+	flex: 1 1 auto;
+}
+
+.bonsai-hub-plugin__meta {
+	margin: 0;
+	font-size: 12px;
+	color: var(--bonsai-ui-muted);
+}
+
+.bonsai-hub-install p {
+	max-width: 80ch;
+}
+
+/* Small screens: nav becomes a wrapping row above the content ---------- */
+
+@media (max-width: 960px) {
+	.bonsai-hub {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.bonsai-hub-nav {
+		position: static;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+	}
+
+	.bonsai-hub-nav ul {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+	}
+
+	.bonsai-hub-nav a {
+		border-left: 0;
+		border-bottom: 3px solid transparent;
+	}
+
+	.bonsai-hub-nav a[aria-current="page"] {
+		border-bottom-color: var(--bonsai-ui-accent);
+	}
+
+	.bonsai-hub-nav ul + .bonsai-hub-nav__footer {
+		margin-top: 0;
+		padding-top: 0;
+		padding-left: 4px;
+		border-top: 0;
+		border-left: 1px solid var(--bonsai-ui-line-soft);
+	}
+}
+
+@media (max-width: 782px) {
+	.bonsai-hub-catalogue {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+/* Print: just the content, e.g. SEO/GEO Checker's PDF reports ---------- */
+
+@media print {
+	.bonsai-hub-nav,
+	.bonsai-hub-tabs,
+	.bonsai-hub-lead {
+		display: none;
+	}
+
+	.bonsai-hub {
+		display: block;
+	}
+
+	.bonsai-ui--hub {
+		max-width: none;
+	}
+}
