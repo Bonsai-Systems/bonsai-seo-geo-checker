@@ -96,7 +96,7 @@ final class Bonsai_Hub {
 
 		// Late, so it wins over other plugins' menu ordering.
 		add_filter( 'custom_menu_order', '__return_true', 999 );
-		add_filter( 'menu_order', array( __CLASS__, 'move_menu_first' ), 999 );
+		add_filter( 'menu_order', array( __CLASS__, 'move_menu_below_dashboard' ), 999 );
 	}
 
 	/**
@@ -238,7 +238,7 @@ final class Bonsai_Hub {
 			self::MENU_SLUG,
 			array( __CLASS__, 'render_page' ),
 			(string) apply_filters( 'bonsai_hub_menu_icon', 'dashicons-layout' ),
-			(int) apply_filters( 'bonsai_hub_menu_position', 1 )
+			(int) apply_filters( 'bonsai_hub_menu_position', 3 )
 		);
 
 		$hook = add_submenu_page(
@@ -647,36 +647,49 @@ final class Bonsai_Hub {
 	}
 
 	/**
-	 * Moves Bonsai to the very top of the admin sidebar, above Dashboard.
+	 * Moves Bonsai to sit directly below Dashboard in the admin sidebar.
 	 *
-	 * Menu position 1 already puts it there on a clean install, but other
+	 * Menu position 3 already puts it there on a clean install, but other
 	 * plugins can claim the same position or reorder the menu, so this
 	 * runs late on core's menu_order filter to make it stick. Return false
-	 * from `bonsai_hub_menu_first` to fall back to the plain position.
+	 * from `bonsai_hub_menu_below_dashboard` to fall back to the plain
+	 * position.
 	 *
 	 * When a user can't open the Plugins screen, core re-points the
 	 * top-level item at the first submenu they can open, so any hub page
-	 * slug counts as "the Bonsai menu".
+	 * slug counts as "the Bonsai menu". If Dashboard isn't in the menu,
+	 * Bonsai goes to the top instead.
 	 *
 	 * @param array $order Top-level menu slugs, in display order.
 	 * @return array
 	 */
-	public static function move_menu_first( $order ) {
-		if ( ! is_array( $order ) || ! apply_filters( 'bonsai_hub_menu_first', true ) ) {
+	public static function move_menu_below_dashboard( $order ) {
+		if ( ! is_array( $order ) || ! apply_filters( 'bonsai_hub_menu_below_dashboard', true ) ) {
 			return $order;
 		}
 
 		$ours = array_merge( array( self::MENU_SLUG ), array_keys( self::modules() ) );
+		$slug = null;
 
-		foreach ( $order as $index => $slug ) {
-			if ( in_array( $slug, $ours, true ) ) {
+		foreach ( $order as $index => $item ) {
+			if ( in_array( $item, $ours, true ) ) {
+				$slug = $item;
 				unset( $order[ $index ] );
-				array_unshift( $order, $slug );
 				break;
 			}
 		}
 
-		return array_values( $order );
+		if ( null === $slug ) {
+			return $order;
+		}
+
+		$order     = array_values( $order );
+		$dashboard = array_search( 'index.php', $order, true );
+		$offset    = ( false === $dashboard ) ? 0 : $dashboard + 1;
+
+		array_splice( $order, $offset, 0, array( $slug ) );
+
+		return $order;
 	}
 
 	/**
