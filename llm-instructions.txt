@@ -7,7 +7,7 @@ technical SEO, meta, content, social, structured data, AI visibility (GEO) and
 mobile performance (PageSpeed Insights), then asks Claude for a prioritised fix
 list. Admin page: Bonsai > SEO/GEO checker (admin.php?page=bsgc, Checker and
 Settings tabs, via the bundled Bonsai Hub in lib/bonsai-hub/). Capability: manage_options.
-Version 1.4.0. WP 6.2+, PHP 7.4+. Prefix: bsgc / BSGC_.
+Version 1.5.0. WP 6.2+, PHP 7.4+. Prefix: bsgc / BSGC_.
 Repo: https://github.com/Bonsai-Systems/bonsai-seo-geo-checker
 
 FILES

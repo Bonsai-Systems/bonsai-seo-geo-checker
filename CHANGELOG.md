@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.4.0] - 2026-10-07
+## [1.5.0] - 2026-10-08
 
 ### Added
 - **AI readiness score**: a second 0–100 score showing how easily AI search can reach, read and quote the page. It's made up of every AI visibility check plus the checks listed in `BSGC_Analyser::AI_READINESS_CHECKS` (noindex, Googlebot access, canonical, server response, H1, heading structure, content depth, structured data, LocalBusiness details). It's returned by `BSGC_Analyser::score()` as `ai_readiness` and recalculated on read, so older reports get it too.
