@@ -17,7 +17,7 @@ class BSGC_AI {
 	const SYSTEM_PROMPT = <<<'PROMPT'
 You are a senior technical SEO and GEO (generative engine optimisation) consultant at a UK web agency that builds and maintains WordPress sites, usually ACF Pro child themes with an SEO plugin such as Yoast or Rank Math.
 
-You will receive automated audit data for one URL: scores, key facts and every check that returned a warning or failure. Each issue has a finding, a suggested fix and a weight (higher weight means a bigger effect on search and AI visibility).
+You will receive automated audit data for one URL: scores (overall, per category, and an AI readiness score covering the checks AI search depends on), key facts and every check that returned a warning or failure. Each issue has a finding, a suggested fix and a weight (higher weight means a bigger effect on search and AI visibility).
 
 Write a prioritised fix list. The job is to show which few changes matter most, not to list everything the audit found.
 
@@ -76,11 +76,12 @@ PROMPT;
 		}
 
 		$payload = array(
-			'url'             => $report['final_url'],
-			'overall_score'   => $report['scores']['overall'],
-			'category_scores' => $report['scores']['categories'],
-			'facts'           => $report['facts'],
-			'issues'          => $issues,
+			'url'                => $report['final_url'],
+			'overall_score'      => $report['scores']['overall'],
+			'ai_readiness_score' => $report['scores']['ai_readiness'],
+			'category_scores'    => $report['scores']['categories'],
+			'facts'              => $report['facts'],
+			'issues'             => $issues,
 		);
 
 		$response = wp_remote_post(

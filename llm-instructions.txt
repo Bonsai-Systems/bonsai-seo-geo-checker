@@ -5,8 +5,9 @@ WHAT IT IS
 Internal WordPress plugin by The Bonsai Digital Collective. It audits one URL for
 technical SEO, meta, content, social, structured data, AI visibility (GEO) and
 mobile performance (PageSpeed Insights), then asks Claude for a prioritised fix
-list. Admin page: Tools > SEO/GEO checker. Capability: manage_options.
-Version 1.2.0. WP 6.2+, PHP 7.4+. Prefix: bsgc / BSGC_.
+list. Admin page: Bonsai > SEO/GEO checker (admin.php?page=bsgc, Checker and
+Settings tabs, via the bundled Bonsai Hub in lib/bonsai-hub/). Capability: manage_options.
+Version 1.4.0. WP 6.2+, PHP 7.4+. Prefix: bsgc / BSGC_.
 Repo: https://github.com/Bonsai-Systems/bonsai-seo-geo-checker
 
 FILES
@@ -40,12 +41,15 @@ CHECK FORMAT
 category, id, label, status (pass|warn|fail|info), message, weight, value, fix
 message = finding only; fix = what to do (shown for warn/fail). fix is optional: older saved reports lack it.
 Score: pass = weight, warn = weight/2, fail = 0, info = unscored.
+AI readiness (scores.ai_readiness): every "ai" check plus the IDs in
+BSGC_Analyser::AI_READINESS_CHECKS. Mirrored in admin.js countsForReadiness()
+via BSGC.aiReadiness. Check IDs must be unique across categories.
 
 SETTINGS (constant overrides the bsgc_settings option, non-autoloaded array)
 BSGC_ANTHROPIC_KEY / anthropic_key
 BSGC_PSI_KEY       / psi_key
 BSGC_CLAUDE_MODEL  / model  (default claude-haiku-4-5-20251001)
-Native Settings API page at Settings > SEO/GEO checker. No ACF dependency.
+Native Settings API, on the Settings tab of Bonsai > SEO/GEO checker. No ACF dependency.
 Saved keys are never printed back to the page; blank on save keeps the stored key.
 
 RULES

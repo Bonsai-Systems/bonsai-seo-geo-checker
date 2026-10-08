@@ -7,7 +7,7 @@ Built by [The Bonsai Digital Collective](https://bonsaidigitalcollective.co.uk/)
 ## What it checks
 
 **Technical:** HTTPS, HTTP status, redirect chains, server response time, HTML size, noindex (meta and X-Robots-Tag), canonical, `lang`, viewport, robots.txt, whether Googlebot is blocked, and the XML sitemap (including whether robots.txt references it).
- ther 
+
 **Titles and descriptions:** title length and duplicate `<title>` tags, and meta description length.
 
 **Content:** H1 count, skipped heading levels, visible word count, image alt attributes, internal/external links and links with no text.
@@ -20,17 +20,25 @@ Built by [The Bonsai Digital Collective](https://bonsaidigitalcollective.co.uk/)
 - robots.txt access for the search and answer crawlers: Googlebot, Bingbot, OAI-SearchBot, ChatGPT-User, PerplexityBot, Perplexity-User, Claude-SearchBot and Claude-User.
 - Training crawlers (GPTBot, ClaudeBot, Google-Extended, CCBot and others) are reported but not scored, because blocking them is a policy choice.
 - A firewall check that fetches the page as OAI-SearchBot, to catch Cloudflare-style AI blocking.
+- Snippet controls: `nosnippet` or `max-snippet:0` (in meta robots, the googlebot meta or the X-Robots-Tag header) fails, because Google applies them to AI Overviews and AI Mode. A `max-snippet` limit under 160 warns. `data-nosnippet` elements are mentioned but not scored.
 - Whether the content is readable without JavaScript.
 - Organization/LocalBusiness/Person schema with `sameAs`.
 - Question-led headings or FAQPage.
+- Answer-first sections: whether at least half the H2/H3 sections open with a short, direct paragraph (10–80 words). Headings in nav, header, footer and sidebars are ignored.
+- Lists and tables in the body content (menus and page furniture excluded).
+- Trust signals: links to an About and a Contact page, plus a named author on Article/BlogPosting pages.
 - A machine-readable publish or update date.
 - llms.txt, reported but unscored.
+
+Answer-first sections and trust signals are heuristics, so they warn at worst and never fail.
 
 **Performance:** the PageSpeed Insights mobile score, LCP, CLS and TBT, plus INP from real-user data where it exists.
 
 **Fix list:** Claude turns every warning and failure into up to eight prioritised fixes. Each one has an effort level and an owner (client or developer).
 
 **Scoring:** a pass earns the check's full weight, a warning earns half and a fail earns nothing. Info checks aren't scored.
+
+**AI readiness:** a second score shown next to the overall one, on the report, the PDF cover and in the client summary. It measures how easily AI search can reach, read and quote the page. It's made up of every AI visibility check plus the checks in other sections that AI search depends on, which are tagged **AI** in the report: noindex, Googlebot access, canonical, server response, H1, heading structure, content depth, structured data and LocalBusiness details. Performance isn't included. Older reports get the score too, but without the newer checks until they're run again.
 
 ## Install
 
@@ -110,8 +118,8 @@ The Composer autoloader has its own fixed suffix (`ComposerAutoloaderInitBonsaiS
 
 ## Using it
 
-- **Copy client summary** puts plain text on the clipboard: the score, the AI summary and the fixes in priority order, signed off with the current user's first name.
-- **Print or save as PDF** produces a client-ready A4 report: a cover page (logo, page URL, score, Claude's summary, date and "Prepared by"), category scores and the fix list, then only the warnings and failures with their fixes. Passing checks and notes are condensed into "Already in good shape" at the end. The file name defaults to `SEO report – example.co.uk-page – YYYY-MM-DD`. Untick the browser's "Headers and footers" option for the cleanest result.
+- **Copy client summary** puts plain text on the clipboard: the overall and AI readiness scores, the AI summary and the fixes in priority order, signed off with the current user's first name.
+- **Print or save as PDF** produces a client-ready A4 report: a cover page (logo, page URL, overall and AI readiness scores, Claude's summary, date and "Prepared by"), category scores and the fix list, then only the warnings and failures with their fixes. Passing checks and notes are condensed into "Already in good shape" at the end. The file name defaults to `SEO report – example.co.uk-page – YYYY-MM-DD`. Untick the browser's "Headers and footers" option for the cleanest result.
 - The cover branding is set under **Bonsai → SEO/GEO checker → Settings → PDF reports**: Bonsai, a custom logo from the Media Library (for white-label clients) or no logo, plus an optional "Prepared by" name.
 - Reports are saved in a hidden `bsgc_report` post type. The last 25 are listed under the form, where you can view or delete them.
 

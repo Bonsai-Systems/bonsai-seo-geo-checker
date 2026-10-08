@@ -159,6 +159,7 @@ class BSGC_Admin {
 					'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
 					'nonce'       => wp_create_nonce( 'bsgc' ),
 					'categories'  => BSGC_Analyser::CATEGORIES,
+					'aiReadiness' => BSGC_Analyser::AI_READINESS_CHECKS,
 					'hasAi'       => '' !== BSGC_Settings::get( 'anthropic_key' ),
 					'settingsUrl' => BSGC_Settings::settings_url(),
 					'signOff'     => $user->first_name ? $user->first_name : $user->display_name,

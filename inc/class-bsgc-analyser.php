@@ -38,6 +38,19 @@ class BSGC_Analyser {
 	const TRAINING_BOTS = array( 'GPTBot', 'ClaudeBot', 'Google-Extended', 'CCBot', 'Applebot-Extended', 'meta-externalagent' );
 
 	/**
+	 * Checks outside the "ai" category that also count towards the AI readiness score.
+	 * Every "ai" check counts automatically. A page AI can't reach, index or parse
+	 * can't be cited however well it's written, hence the technical and content checks.
+	 */
+	const AI_READINESS_CHECKS = array( 'indexable', 'robots_block', 'canonical', 'response_time', 'h1', 'heading_order', 'word_count', 'structured_data', 'local_business' );
+
+	/**
+	 * Words in a section's opening paragraph for it to count as a direct answer.
+	 */
+	const ANSWER_MIN_WORDS = 10;
+	const ANSWER_MAX_WORDS = 80;
+
+	/**
 	 * Most internal links tested for errors per check.
 	 */
 	const LINK_SAMPLE = 10;
@@ -128,11 +141,12 @@ class BSGC_Analyser {
 	 * @var array
 	 */
 	private $schema = array(
-		'types'    => array(),
-		'same_as'  => 0,
-		'has_date' => false,
-		'invalid'  => 0,
-		'local'    => array(),
+		'types'      => array(),
+		'same_as'    => 0,
+		'has_date'   => false,
+		'has_author' => false,
+		'invalid'    => 0,
+		'local'      => array(),
 	);
 
 	/**
@@ -197,7 +211,7 @@ class BSGC_Analyser {
 	 * Score a set of checks overall and per category.
 	 *
 	 * @param array $checks Checks.
-	 * @return array { overall: int, categories: { key: int } }
+	 * @return array { overall: int, ai_readiness: int, categories: { key: int } }
 	 */
 	public static function score( $checks ) {
 		$factors = array(
@@ -208,6 +222,7 @@ class BSGC_Analyser {
 		$cats    = array();
 		$earned  = 0;
 		$total   = 0;
+		$ready   = array( 0, 0 );
 
 		foreach ( $checks as $check ) {
 			if ( empty( $check['weight'] ) || ! isset( $factors[ $check['status'] ] ) ) {
@@ -225,6 +240,11 @@ class BSGC_Analyser {
 			$cats[ $cat ][1] += $check['weight'];
 			$earned         += $points;
 			$total          += $check['weight'];
+
+			if ( self::counts_for_readiness( $check ) ) {
+				$ready[0] += $points;
+				$ready[1] += $check['weight'];
+			}
 		}
 
 		$categories = array();
@@ -236,9 +256,20 @@ class BSGC_Analyser {
 		}
 
 		return array(
-			'overall'    => $total > 0 ? (int) round( $earned / $total * 100 ) : 0,
-			'categories' => (object) $categories,
+			'overall'      => $total > 0 ? (int) round( $earned / $total * 100 ) : 0,
+			'ai_readiness' => $ready[1] > 0 ? (int) round( $ready[0] / $ready[1] * 100 ) : 0,
+			'categories'   => (object) $categories,
 		);
+	}
+
+	/**
+	 * Whether a check counts towards the AI readiness score.
+	 *
+	 * @param array $check Check.
+	 * @return bool
+	 */
+	public static function counts_for_readiness( $check ) {
+		return 'ai' === $check['category'] || in_array( $check['id'], self::AI_READINESS_CHECKS, true );
 	}
 
 	/* ---------------------------------------------------------------------
@@ -872,7 +903,8 @@ class BSGC_Analyser {
 	}
 
 	/**
-	 * AI visibility: crawler access, firewall behaviour, raw-HTML content, entity markup, llms.txt, Q&A, freshness.
+	 * AI visibility: crawler access, firewall behaviour, snippet controls, raw-HTML content, entity markup,
+	 * Q&A, answer-first sections, lists and tables, trust signals, freshness, llms.txt.
 	 */
 	private function check_ai() {
 		$path = $this->request_path();
@@ -934,6 +966,8 @@ class BSGC_Analyser {
 			$this->add( 'ai', 'ai_firewall', 'Firewall check', 'pass', sprintf( 'A request identifying as OAI-SearchBot was served normally (HTTP %d).', $bot['code'] ), 3 );
 		}
 
+		$this->check_snippet_controls();
+
 		$words   = $this->facts['word_count'];
 		$scripts = $this->xpath->query( '//script[@src]' )->length;
 		$shell   = $this->xpath->query( '//*[@id="root" or @id="app" or @id="__next" or @id="__nuxt"]' )->length > 0;
@@ -977,6 +1011,10 @@ class BSGC_Analyser {
 			$this->add( 'ai', 'qa_format', 'Question-led content', 'warn', 'No question-style headings or FAQ section. AI answers tend to lift content that directly answers a stated question.', 1, '', 'Consider H2s phrased as the questions customers actually ask, each answered directly in the first sentence below it.' );
 		}
 
+		$this->check_answer_first();
+		$this->check_extractable_formats();
+		$this->check_trust_signals();
+
 		$has_date = $this->schema['has_date']
 			|| $this->meta( 'article:modified_time' )
 			|| $this->meta( 'article:published_time' )
@@ -1002,6 +1040,155 @@ class BSGC_Analyser {
 			BSGC_Fetcher::is_text_file( $llms ) ? 'llms.txt found.' : 'No llms.txt. It\'s an emerging convention and no major AI platform has confirmed using it, so it isn\'t scored. Low effort if you want to add one.',
 			0
 		);
+	}
+
+	/**
+	 * nosnippet and max-snippet limit what Google can quote, and Google applies them
+	 * to AI Overviews and AI Mode as well as normal snippets.
+	 */
+	private function check_snippet_controls() {
+		$directives = strtolower(
+			(string) $this->meta( 'robots' ) . ', ' . (string) $this->meta( 'googlebot' ) . ', ' . BSGC_Fetcher::header( $this->page['headers'], 'x-robots-tag' )
+		);
+		$fix        = 'Remove nosnippet or the max-snippet limit from the SEO plugin\'s per-page advanced settings, or from the server or CDN rule that sends the X-Robots-Tag header. Yoast and Rank Math output max-snippet:-1 (no limit) by default.';
+
+		$limit = null;
+		if ( preg_match( '/max-snippet\s*:\s*(-?\d+)/', $directives, $match ) ) {
+			$limit = (int) $match[1];
+		}
+
+		$partial = $this->xpath->query( '//body//*[@data-nosnippet]' )->length;
+		$note    = $partial ? sprintf( ' %d element(s) use data-nosnippet, which hides just those parts. Fine for cookie banners and boilerplate; check it isn\'t on the main content.', $partial ) : '';
+
+		if ( preg_match( '/(^|[\s,:])nosnippet\b/', $directives ) || 0 === $limit ) {
+			$this->add( 'ai', 'snippet_controls', 'AI snippet controls', 'fail', 'The page tells Google not to show any text from it (nosnippet or max-snippet:0). Google applies this to AI Overviews and AI Mode too, so the page can\'t be quoted there.' . $note, 3, trim( $directives, ' ,' ), $fix );
+		} elseif ( null !== $limit && $limit > 0 && $limit < 160 ) {
+			$this->add( 'ai', 'snippet_controls', 'AI snippet controls', 'warn', sprintf( 'max-snippet limits Google to %d characters of text from this page, including in AI Overviews.', $limit ) . $note, 3, trim( $directives, ' ,' ), $fix );
+		} else {
+			$this->add( 'ai', 'snippet_controls', 'AI snippet controls', 'pass', 'No nosnippet or restrictive max-snippet directive, so Google can quote the page in results and AI Overviews.' . $note, 3 );
+		}
+	}
+
+	/**
+	 * Sections that open with a short, direct paragraph are easy to lift into an AI answer.
+	 * Heuristic, so it warns at worst. Headings in nav, header, footer and sidebars are ignored.
+	 */
+	private function check_answer_first() {
+		$headings = $this->xpath->query( '//body//*[self::h2 or self::h3][normalize-space()][not(ancestor::nav or ancestor::header or ancestor::footer or ancestor::aside)]' );
+		$sections = 0;
+		$direct   = 0;
+
+		foreach ( $headings as $heading ) {
+			++$sections;
+
+			// The first non-empty paragraph or heading after this one; a heading means the section has no opening paragraph.
+			$next = $this->xpath->query( 'following::*[(self::p and normalize-space()) or self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6][1]', $heading )->item( 0 );
+
+			if ( ! $next || 'p' !== strtolower( $next->nodeName ) ) {
+				continue;
+			}
+
+			$words = $this->count_words( $this->clean( $next->textContent ) );
+
+			if ( $words >= self::ANSWER_MIN_WORDS && $words <= self::ANSWER_MAX_WORDS ) {
+				++$direct;
+			}
+		}
+
+		if ( $sections < 2 ) {
+			$this->add( 'ai', 'answer_first', 'Answer-first sections', 'info', 'Fewer than two H2/H3 sections in the main content, so there\'s nothing to judge.', 0 );
+			return;
+		}
+
+		$value = sprintf( '%d of %d sections', $direct, $sections );
+
+		if ( $direct / $sections >= 0.5 ) {
+			$this->add( 'ai', 'answer_first', 'Answer-first sections', 'pass', sprintf( '%d of %d sections open with a short, direct paragraph that AI answers can quote on its own.', $direct, $sections ), 2, $value );
+		} else {
+			$this->add(
+				'ai',
+				'answer_first',
+				'Answer-first sections',
+				'warn',
+				sprintf( 'Only %d of %d sections open with a short, direct paragraph (%d–%d words). AI answers favour passages that make sense on their own without the rest of the page.', $direct, $sections, self::ANSWER_MIN_WORDS, self::ANSWER_MAX_WORDS ),
+				2,
+				$value,
+				'Start each section with one or two sentences that answer its heading outright, then add the detail. Avoid opening with an image, a button or a long preamble.'
+			);
+		}
+	}
+
+	/**
+	 * Lists and tables in the body content (menus and page furniture excluded).
+	 */
+	private function check_extractable_formats() {
+		$outside = 'not(ancestor::nav or ancestor::header or ancestor::footer or ancestor::aside) and not(ancestor-or-self::*[@role="navigation" or contains(@class,"menu")])';
+		$lists   = $this->xpath->query( '//body//*[self::ul or self::ol][count(li) >= 3][string-length(normalize-space()) > 40][' . $outside . ']' )->length;
+		$tables  = $this->xpath->query( '//body//table[.//td][' . $outside . ']' )->length;
+
+		if ( $lists || $tables ) {
+			$this->add( 'ai', 'extractable_formats', 'Lists and tables', 'pass', sprintf( '%d list(s) and %d table(s) in the body content, which AI answers can lift directly.', $lists, $tables ), 1 );
+		} else {
+			$this->add( 'ai', 'extractable_formats', 'Lists and tables', 'warn', 'No lists or tables in the body content. AI answers often lift steps, options, comparisons and key facts straight from lists and tables.', 1, '', 'Where content is naturally a set of steps, options or features, format it as a bulleted or numbered list. Use a table for prices, specifications or comparisons.' );
+		}
+	}
+
+	/**
+	 * Signals that show who is behind the content: About and Contact pages, plus a named author on articles.
+	 */
+	private function check_trust_signals() {
+		$current = strtolower( (string) wp_parse_url( $this->page['final_url'], PHP_URL_PATH ) );
+		$about   = (bool) preg_match( '#/(about|who-we-are|our-story)#', $current );
+		$contact = false !== strpos( $current, '/contact' );
+
+		foreach ( $this->xpath->query( '//body//a[@href]' ) as $link ) {
+			$href = strtolower( trim( $link->getAttribute( 'href' ) ) );
+			$text = strtolower( $this->clean( $link->textContent ) );
+
+			if ( preg_match( '#/(about|who-we-are|our-story)#', $href ) || preg_match( '/^(about|who we are|our story)\b/', $text ) ) {
+				$about = true;
+			}
+
+			if ( false !== strpos( $href, '/contact' ) || 0 === strpos( $text, 'contact' ) ) {
+				$contact = true;
+			}
+		}
+
+		$missing = array();
+		$fixes   = array();
+
+		if ( ! $about ) {
+			$missing[] = 'a link to an About page';
+		}
+
+		if ( ! $contact ) {
+			$missing[] = 'a link to a Contact page';
+		}
+
+		if ( ! $about || ! $contact ) {
+			$fixes[] = 'Link the About and Contact pages from the main menu or footer so every page shows who runs the site and how to reach them.';
+		}
+
+		$article = (bool) array_intersect( array( 'Article', 'BlogPosting', 'NewsArticle' ), $this->schema['types'] );
+
+		if ( $article ) {
+			$author = $this->schema['has_author']
+				|| $this->meta( 'author' )
+				|| $this->xpath->query( '//a[contains(concat(" ",normalize-space(@rel)," ")," author ")]' )->length > 0;
+
+			if ( ! $author ) {
+				$missing[] = 'a named author on this article';
+				$fixes[]   = 'Show a named author with a short bio, and check the SEO plugin outputs the author in the Article schema.';
+			}
+		}
+
+		if ( empty( $missing ) ) {
+			$this->add( 'ai', 'trust_signals', 'Trust signals', 'pass', $article ? 'Links to About and Contact pages, and the article has a named author.' : 'Links to About and Contact pages, so it\'s clear who is behind the content.', 2 );
+		} else {
+			$last = array_pop( $missing );
+			$list = $missing ? implode( ', ', $missing ) . ' and ' . $last : $last;
+			$this->add( 'ai', 'trust_signals', 'Trust signals', 'warn', 'Missing ' . $list . '. Search engines and AI systems weigh how clearly a page shows who wrote it and who stands behind it.', 2, '', implode( ' ', $fixes ) );
+		}
 	}
 
 	/* ---------------------------------------------------------------------
@@ -1193,6 +1380,10 @@ class BSGC_Analyser {
 
 		if ( ! empty( $data['dateModified'] ) || ! empty( $data['datePublished'] ) ) {
 			$this->schema['has_date'] = true;
+		}
+
+		if ( ! empty( $data['author'] ) ) {
+			$this->schema['has_author'] = true;
 		}
 
 		foreach ( $data as $value ) {

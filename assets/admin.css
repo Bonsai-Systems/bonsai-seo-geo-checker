@@ -166,9 +166,53 @@
 	color: var(--bsgc-muted);
 }
 
-.bsgc-score-note {
+.bsgc-score--small {
+	width: 120px;
+	height: 120px;
+}
+
+.bsgc-score--small::before {
+	inset: 12px;
+}
+
+.bsgc-score--small .bsgc-score__value {
+	font-size: 40px;
+}
+
+.bsgc-score-rings {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 24px;
+	align-items: center;
+	justify-content: center;
+}
+
+.bsgc-score-item {
+	display: grid;
+	justify-items: center;
+	gap: 8px;
+	margin: 0;
+}
+
+.bsgc-score-item figcaption {
 	max-width: 172px;
-	margin: 10px 0 0;
+	font-size: 13px;
+	font-weight: 600;
+	text-align: center;
+}
+
+.bsgc-score-item__hint {
+	display: block;
+	max-width: 140px;
+	margin-top: 2px;
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--bsgc-muted);
+}
+
+.bsgc-score-note {
+	max-width: 320px;
+	margin: 10px auto 0;
 	font-size: 12px;
 	text-align: center;
 	color: var(--bsgc-muted);
@@ -300,6 +344,17 @@
 	font-size: 12px;
 	background: var(--bsgc-surface);
 	border-radius: 10px;
+}
+
+/* Marks checks outside "AI visibility" that count towards AI readiness. */
+.bsgc-tag--ai {
+	padding: 1px 6px;
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	vertical-align: middle;
+	color: var(--bsgc-ink);
+	white-space: nowrap;
 }
 
 .bsgc-regenerate {
@@ -582,6 +637,7 @@
 
 	.bsgc-cover__score {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 10mm;
 		align-items: center;
 		margin-bottom: 12mm;
@@ -606,6 +662,18 @@
 	.bsgc-cover__stats strong {
 		font-size: 14pt;
 		color: var(--bsgc-ink);
+	}
+
+	.bsgc-cover__ready {
+		display: flex;
+		gap: 6mm;
+		align-items: center;
+		padding-left: 10mm;
+		border-left: 1px solid var(--bsgc-line);
+	}
+
+	.bsgc-cover__ready .bsgc-cover__stats {
+		max-width: 45mm;
 	}
 
 	.bsgc-cover__summary {

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-07
+
+### Added
+- **AI readiness score**: a second 0–100 score showing how easily AI search can reach, read and quote the page. It's made up of every AI visibility check plus the checks listed in `BSGC_Analyser::AI_READINESS_CHECKS` (noindex, Googlebot access, canonical, server response, H1, heading structure, content depth, structured data, LocalBusiness details). It's returned by `BSGC_Analyser::score()` as `ai_readiness` and recalculated on read, so older reports get it too.
+- AI readiness shown as a second ring next to the overall score, on the PDF cover and in the copied client summary. Checks from other sections that count towards it are tagged **AI**.
+- AI snippet controls check: `nosnippet` or `max-snippet:0` (meta robots, googlebot meta or X-Robots-Tag) fails, because Google applies them to AI Overviews and AI Mode. A `max-snippet` limit under 160 warns. `data-nosnippet` elements are mentioned but not scored.
+- Answer-first sections check: warns when fewer than half of the H2/H3 sections open with a short, direct paragraph (10–80 words). Headings in nav, header, footer and sidebars are ignored. Info only when there are fewer than two sections.
+- Lists and tables check: warns when the body content has no list (3+ items) or data table. Menus and page furniture are excluded.
+- Trust signals check: links to an About and a Contact page, plus a named author (schema `author`, `meta name="author"` or `rel="author"`) on Article/BlogPosting/NewsArticle pages.
+- `ai_readiness_score` included in the data sent to Claude for the fix list.
+
+### Fixed
+- Stray text in README.md and outdated version and menu locations in llm-instructions.txt.
+
 ## [1.3.1] - 2026-10-05
 
 ### Changed

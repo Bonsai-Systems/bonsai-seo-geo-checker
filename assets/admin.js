@@ -232,7 +232,7 @@
 			$( '<p class="bsgc-cover__eyebrow">' ).text( 'SEO and AI visibility report' ),
 			$( '<p class="bsgc-cover__url">' ).text( displayUrl( r.final_url ) ),
 			$( '<div class="bsgc-cover__score">' ).append(
-				scoreRing( r.scores.overall ),
+				scoreRing( r.scores.overall, 'Overall score' ),
 				$( '<p class="bsgc-cover__stats">' ).append(
 					$( '<strong>' ).text( 'Overall score' ),
 					$( '<span>' ).text( issues + ( 1 === issues ? ' issue' : ' issues' ) + ' to fix' ),
@@ -240,6 +240,18 @@
 				)
 			)
 		);
+
+		if ( hasReadiness( r ) ) {
+			$main.find( '.bsgc-cover__score' ).append(
+				$( '<div class="bsgc-cover__ready">' ).append(
+					scoreRing( r.scores.ai_readiness, 'AI readiness', true ),
+					$( '<p class="bsgc-cover__stats">' ).append(
+						$( '<strong>' ).text( 'AI readiness' ),
+						$( '<span>' ).text( 'How easily AI search can reach, read and quote the page' )
+					)
+				)
+			);
+		}
 
 		if ( r.ai && 'done' === r.ai.status && r.ai.summary ) {
 			$main.append( $( '<p class="bsgc-cover__summary">' ).text( r.ai.summary ) );
@@ -256,20 +268,34 @@
 		return $( '<section class="bsgc-cover bsgc-print-only">' ).append( $top, $main, $meta );
 	}
 
-	function scoreRing( overall ) {
+	/**
+	 * Circular score. Pass small = true for the secondary (AI readiness) ring.
+	 */
+	function scoreRing( value, label, small ) {
 		return $( '<div class="bsgc-score" role="img">' )
-			.attr( 'aria-label', 'Overall score ' + overall + ' out of 100' )
-			.css( '--bsgc-score', String( overall ) )
+			.toggleClass( 'bsgc-score--small', !! small )
+			.attr( 'aria-label', label + ' ' + value + ' out of 100' )
+			.css( '--bsgc-score', String( value ) )
 			.append(
 				$( '<span class="bsgc-score__inner" aria-hidden="true">' ).append(
-					$( '<span class="bsgc-score__value">' ).text( overall ),
+					$( '<span class="bsgc-score__value">' ).text( value ),
 					$( '<span class="bsgc-score__max">' ).text( 'out of 100' )
 				)
 			);
 	}
 
+	/**
+	 * Mirrors BSGC_Analyser::counts_for_readiness(): every AI visibility check, plus the listed IDs.
+	 */
+	function countsForReadiness( c ) {
+		return 'ai' === c.category || -1 !== $.inArray( c.id, BSGC.aiReadiness || [] );
+	}
+
+	function hasReadiness( r ) {
+		return undefined !== r.scores.ai_readiness;
+	}
+
 	function renderScores( r ) {
-		var overall = r.scores.overall;
 		var $cats = $( '<ul class="bsgc-cats">' );
 
 		$.each( BSGC.categories, function ( key, label ) {
@@ -288,7 +314,26 @@
 			);
 		} );
 
-		var $side = $( '<div class="bsgc-score-wrap">' ).append( scoreRing( overall ) );
+		var $rings = $( '<div class="bsgc-score-rings">' ).append(
+			$( '<figure class="bsgc-score-item">' ).append(
+				scoreRing( r.scores.overall, 'Overall score' ),
+				$( '<figcaption>' ).text( 'Overall' )
+			)
+		);
+
+		if ( hasReadiness( r ) ) {
+			$rings.append(
+				$( '<figure class="bsgc-score-item">' ).append(
+					scoreRing( r.scores.ai_readiness, 'AI readiness', true ),
+					$( '<figcaption>' ).append(
+						document.createTextNode( 'AI readiness' ),
+						$( '<span class="bsgc-score-item__hint">' ).text( 'AI visibility checks plus those tagged AI' )
+					)
+				)
+			);
+		}
+
+		var $side = $( '<div class="bsgc-score-wrap">' ).append( $rings );
 		if ( state.perfPending ) {
 			$side.append( $( '<p class="bsgc-score-note">' ).text( 'Performance will be added when PageSpeed finishes.' ) );
 		}
@@ -416,12 +461,22 @@
 				);
 			}
 
+			var $label = $( '<th scope="row">' ).text( c.label );
+			// Every AI visibility check counts, so only tag the ones from other sections.
+			if ( 'ai' !== c.category && countsForReadiness( c ) ) {
+				$label.append(
+					' ',
+					$( '<span class="bsgc-tag bsgc-tag--ai" aria-hidden="true">' ).text( 'AI' ),
+					$( '<span class="screen-reader-text">' ).text( '(counts towards AI readiness)' )
+				);
+			}
+
 			$tbody.append(
 				$( '<tr>' ).addClass( 'bsgc-checks__row--' + c.status ).append(
 					$( '<td class="bsgc-checks__result">' ).append(
 						$( '<span class="bsgc-badge">' ).addClass( 'bsgc-badge--' + c.status ).text( STATUS_LABELS[ c.status ] || c.status )
 					),
-					$( '<th scope="row">' ).text( c.label ),
+					$label,
 					$finding
 				)
 			);
@@ -487,7 +542,8 @@
 	function buildSummary( r ) {
 		var lines = [
 			'SEO and AI visibility check for ' + r.final_url,
-			'Checked ' + r.checked_at_label + '. Overall score: ' + r.scores.overall + '/100.',
+			'Checked ' + r.checked_at_label + '. Overall score: ' + r.scores.overall + '/100.' +
+				( hasReadiness( r ) ? ' AI readiness: ' + r.scores.ai_readiness + '/100.' : '' ),
 			''
 		];
 
