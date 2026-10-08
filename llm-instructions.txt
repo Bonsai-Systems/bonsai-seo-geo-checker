@@ -7,7 +7,7 @@ technical SEO, meta, content, social, structured data, AI visibility (GEO) and
 mobile performance (PageSpeed Insights), then asks Claude for a prioritised fix
 list. Admin page: Bonsai > SEO/GEO checker (admin.php?page=bsgc, Checker and
 Settings tabs, via the bundled Bonsai Hub in lib/bonsai-hub/). Capability: manage_options.
-Version 1.5.0. WP 6.2+, PHP 7.4+. Prefix: bsgc / BSGC_.
+Version 1.5.1. WP 6.2+, PHP 7.4+. Prefix: bsgc / BSGC_.
 Repo: https://github.com/Bonsai-Systems/bonsai-seo-geo-checker
 
 FILES
@@ -54,7 +54,9 @@ Saved keys are never printed back to the page; blank on save keeps the stored ke
 
 RULES
 - WordPress Coding Standards: tabs, Yoda conditions, escape all output.
-- User-supplied URLs are fetched only through BSGC_Fetcher::get() (wp_safe_remote_get).
+- User-supplied URLs are fetched only through BSGC_Fetcher::get() / get_page() (wp_safe_remote_get).
+- Keep UA_BROWSER a current Chrome string (filter bsgc_user_agent); hosts block old
+  frozen ones. get_page() retries the audited page once as Firefox on 401/403/429.
 - JS inserts dynamic data with .text()/.attr(), never .html().
 - Claude output must pass through BSGC_AI::sanitise().
 - Never hardcode or log API keys.

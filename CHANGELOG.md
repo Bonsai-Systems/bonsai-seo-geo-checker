@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-10-08
+
+### Fixed
+- Sites on hosts that block old Chrome user agents (SiteGround returned 403 for `Chrome/129.0.0.0`) could not be checked. The browser user agent is now a current Chrome.
+- The Indexable check missed the `none` robots directive, which means noindex, nofollow. `none` in meta robots, the googlebot meta or X-Robots-Tag now fails the check. Values such as `max-image-preview:none` are not affected.
+
+### Added
+- If the audited page returns 401, 403 or 429, the checker retries once identifying as Firefox. If that gets through, it uses Firefox for the rest of the check (robots.txt, sitemap and link tests) and adds an info-only **Browser access** note to the report.
+- `bsgc_user_agent` filter to change the browser user agent on a site without a release.
+
 ## [1.5.0] - 2026-10-08
 
 ### Added

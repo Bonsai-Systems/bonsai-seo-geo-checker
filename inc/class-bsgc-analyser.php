@@ -164,7 +164,7 @@ class BSGC_Analyser {
 	 * @return array|WP_Error Report.
 	 */
 	public function run() {
-		$page = BSGC_Fetcher::get( $this->url );
+		$page = BSGC_Fetcher::get_page( $this->url );
 
 		if ( is_wp_error( $page ) ) {
 			return new WP_Error( 'bsgc_fetch_failed', 'Could not fetch the page: ' . $page->get_error_message() );
@@ -305,6 +305,17 @@ class BSGC_Analyser {
 		);
 		$this->facts['http_status'] = $page['code'];
 
+		if ( ! empty( $page['retried_from'] ) ) {
+			$this->add(
+				'technical',
+				'browser_block',
+				'Browser access',
+				'info',
+				sprintf( 'The first request, identifying as Chrome, got HTTP %d. A retry identifying as Firefox got through, so the rest of the check used that. A firewall or host rule is blocking at least one common browser user agent, which can catch real visitors too. Worth checking the host\'s or CDN\'s bot protection settings.', $page['retried_from'] ),
+				0
+			);
+		}
+
 		$redirects = $page['redirects'];
 		if ( 0 === $redirects ) {
 			$this->add( 'technical', 'redirects', 'Redirects', 'pass', 'No redirects.', 1 );
@@ -341,15 +352,17 @@ class BSGC_Analyser {
 			'Large HTML usually means inlined CSS/JS or a page builder bloating the markup. Move inline assets into enqueued files and cut unnecessary wrapper elements.'
 		);
 
-		$robots_meta = strtolower( (string) $this->meta( 'robots' ) . ' ' . (string) $this->meta( 'googlebot' ) );
+		$robots_meta = strtolower( (string) $this->meta( 'robots' ) . ', ' . (string) $this->meta( 'googlebot' ) );
 		$x_robots    = strtolower( BSGC_Fetcher::header( $page['headers'], 'x-robots-tag' ) );
-		$noindex     = false !== strpos( $robots_meta, 'noindex' ) || false !== strpos( $x_robots, 'noindex' );
+		$directives  = $robots_meta . ', ' . $x_robots;
+		// "none" means noindex, nofollow. Not preceded by ":" so values like max-image-preview:none don't match.
+		$noindex = false !== strpos( $directives, 'noindex' ) || (bool) preg_match( '/(^|[\s,])none\b/', $directives );
 		$this->add(
 			'technical',
 			'indexable',
 			'Indexable',
 			$noindex ? 'fail' : 'pass',
-			$noindex ? 'Page is set to noindex (meta robots or X-Robots-Tag header). It will not appear in search results or most AI answers.' : 'No noindex directive found.',
+			$noindex ? 'Page is set to noindex (noindex or none, in meta robots or the X-Robots-Tag header). It will not appear in search results or most AI answers.' : 'No noindex directive found.',
 			5,
 			'',
 			'Check Settings → Reading ("Discourage search engines") and the SEO plugin\'s per-page setting.'

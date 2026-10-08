@@ -16,14 +16,81 @@ class BSGC_Fetcher {
 
 	/**
 	 * Realistic browser UA for the main fetch, so we see what visitors see
-	 * and don't trip naive bot blocks.
+	 * and don't trip naive bot blocks. Keep it reasonably current: some host
+	 * firewalls block old, frozen Chrome strings that scrapers reuse
+	 * (Chrome/129.0.0.0 is blocked on SiteGround, for example).
 	 */
-	const UA_BROWSER = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36';
+	const UA_BROWSER = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
+
+	/**
+	 * Second browser UA, tried once when the main page refuses UA_BROWSER.
+	 */
+	const UA_FALLBACK = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:143.0) Gecko/20100101 Firefox/143.0';
 
 	/**
 	 * OpenAI search crawler UA, used for the firewall check.
 	 */
 	const UA_AI_BOT = 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot';
+
+	/**
+	 * Status codes that suggest a firewall or bot block rather than a real error.
+	 */
+	const BLOCKED_CODES = array( 401, 403, 429 );
+
+	/**
+	 * UA that got through after the main one was refused. Used for every
+	 * later request in the same check, so robots.txt, the sitemap and link
+	 * tests aren't blocked either.
+	 *
+	 * @var string
+	 */
+	private static $working_ua = '';
+
+	/**
+	 * Browser UA for fetches.
+	 *
+	 * @return string
+	 */
+	public static function user_agent() {
+		if ( '' !== self::$working_ua ) {
+			return self::$working_ua;
+		}
+
+		/**
+		 * Filters the browser user agent used to fetch pages.
+		 *
+		 * @param string $user_agent User agent.
+		 */
+		$ua = trim( (string) apply_filters( 'bsgc_user_agent', self::UA_BROWSER ) );
+
+		return '' !== $ua ? $ua : self::UA_BROWSER;
+	}
+
+	/**
+	 * GET the page being audited. If the response looks like a bot block,
+	 * retry once with UA_FALLBACK and, if that works, keep using it.
+	 *
+	 * @param string $url URL.
+	 * @return array|WP_Error As get(), plus 'retried_from' (the first status code) when the fallback was used.
+	 */
+	public static function get_page( $url ) {
+		$page = self::get( $url );
+
+		if ( is_wp_error( $page ) || ! in_array( $page['code'], self::BLOCKED_CODES, true ) ) {
+			return $page;
+		}
+
+		$retry = self::get( $url, array( 'user-agent' => self::UA_FALLBACK ) );
+
+		if ( is_wp_error( $retry ) || $retry['code'] >= 400 ) {
+			return $page;
+		}
+
+		self::$working_ua      = self::UA_FALLBACK;
+		$retry['retried_from'] = $page['code'];
+
+		return $retry;
+	}
 
 	/**
 	 * Tidy and validate a user-supplied URL.
@@ -64,7 +131,7 @@ class BSGC_Fetcher {
 			array(
 				'timeout'             => 20,
 				'redirection'         => 5,
-				'user-agent'          => self::UA_BROWSER,
+				'user-agent'          => self::user_agent(),
 				'limit_response_size' => 5 * MB_IN_BYTES,
 				'headers'             => array(
 					'Accept'          => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -115,7 +182,7 @@ class BSGC_Fetcher {
 		$args = array(
 			'timeout'     => 5,
 			'redirection' => 3, // HEAD requests don't follow redirects unless told to.
-			'user-agent'  => self::UA_BROWSER,
+			'user-agent'  => self::user_agent(),
 		);
 
 		$response = wp_safe_remote_head( $url, $args );

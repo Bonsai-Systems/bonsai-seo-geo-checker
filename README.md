@@ -140,6 +140,12 @@ add_filter( 'bsgc_post_types', function ( $types ) {
 ## Known limits
 
 - The main checks run in PHP, so a request can take 5–15 seconds. PageSpeed and Claude each take up to a minute. The plugin raises `set_time_limit`, but hosts with a hard 30-second proxy timeout may cut PageSpeed off. If that happens, run the tool on a host with longer limits.
-- Sites behind aggressive bot protection may return 403 to server-side requests. In that case the tool reports the block instead of auditing.
+- Sites behind aggressive bot protection may return 403 to server-side requests. The checker fetches as a current Chrome. If the page returns 401, 403 or 429, it retries once as Firefox, uses Firefox for the rest of that check if it gets through, and notes this in the report. If both are refused, the tool reports the block instead of auditing. Some hosts block particular browser strings, so to change the main user agent on a site without waiting for a release:
+
+```php
+add_filter( 'bsgc_user_agent', function ( $user_agent ) {
+	return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36';
+} );
+```
 - `wp_safe_remote_get()` refuses private/internal IPs, which stops it being used to probe the server's own network. The same rule means it can't check local `.test` sites.
 - It checks one URL at a time and doesn't crawl. Crawling is the tier 3 version.
