@@ -276,6 +276,58 @@
 	font-variant-numeric: tabular-nums;
 }
 
+/* Performance tabs (Mobile | Desktop) */
+
+.bsgc-perf-tabs {
+	display: flex;
+	gap: 4px;
+	margin: 0 0 16px;
+	border-bottom: 1px solid var(--bsgc-line);
+}
+
+.bsgc-perf-tab {
+	display: inline-flex;
+	gap: 8px;
+	align-items: center;
+	margin: 0 0 -1px;
+	padding: 8px 16px;
+	font: inherit;
+	font-weight: 600;
+	color: var(--bsgc-muted);
+	cursor: pointer;
+	background: none;
+	border: 0;
+	border-bottom: 3px solid transparent;
+}
+
+.bsgc-perf-tab:hover {
+	color: var(--bsgc-ink);
+}
+
+.bsgc-perf-tab[aria-selected="true"] {
+	color: var(--bsgc-ink);
+	border-bottom-color: var(--bsgc-accent);
+}
+
+.bsgc-perf-tab:focus-visible,
+.bsgc-perf-panel:focus-visible {
+	outline: 2px solid var(--bsgc-ink);
+	outline-offset: 2px;
+}
+
+.bsgc-perf-tab__score {
+	padding: 1px 8px;
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+	background: var(--bsgc-surface);
+	border-radius: 10px;
+}
+
+.bsgc-perf-note {
+	margin: 0 0 12px;
+	color: var(--bsgc-muted);
+}
+
 .bsgc-loading {
 	display: flex;
 	gap: 8px;
@@ -549,8 +601,25 @@
 	.bsgc-report button,
 	.bsgc-panel--clean,
 	.bsgc-checks__row--pass,
-	.bsgc-checks__row--info {
+	.bsgc-checks__row--info,
+	.bsgc-perf-tabs,
+	.bsgc-perf-panel--empty {
 		display: none !important;
+	}
+
+	/* Print both PageSpeed tabs, one after the other. Overrides the hidden attribute. */
+	.bsgc-perf-panel[hidden] {
+		display: block;
+	}
+
+	.bsgc-perf-panel + .bsgc-perf-panel {
+		margin-top: 6mm;
+	}
+
+	.bsgc-perf-panel__title {
+		margin: 0 0 3mm;
+		font-size: 11pt;
+		break-after: avoid;
 	}
 
 	html,

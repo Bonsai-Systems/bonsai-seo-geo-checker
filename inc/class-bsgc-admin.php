@@ -307,13 +307,15 @@ class BSGC_Admin {
 	}
 
 	/**
-	 * Run PageSpeed Insights for a saved report.
+	 * Run PageSpeed Insights (mobile or desktop) for a saved report.
 	 */
 	public static function ajax_run_pagespeed() {
 		self::verify();
 
-		$report = self::requested_report();
-		$result = BSGC_PageSpeed::run( $report['final_url'] );
+		$report   = self::requested_report();
+		$strategy = isset( $_POST['strategy'] ) ? sanitize_key( wp_unslash( $_POST['strategy'] ) ) : 'mobile'; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in verify().
+		$strategy = in_array( $strategy, BSGC_PageSpeed::STRATEGIES, true ) ? $strategy : 'mobile';
+		$result   = BSGC_PageSpeed::run( $report['final_url'], $strategy );
 
 		if ( is_wp_error( $result ) ) {
 			$result = array(
@@ -322,7 +324,7 @@ class BSGC_Admin {
 			);
 		}
 
-		BSGC_Reports::save_part( $report['id'], 'perf', $result );
+		BSGC_Reports::save_part( $report['id'], 'desktop' === $strategy ? 'perf_desktop' : 'perf', $result );
 
 		wp_send_json_success( array( 'report' => BSGC_Reports::get( $report['id'] ) ) );
 	}

@@ -32,7 +32,7 @@ Built by [The Bonsai Digital Collective](https://bonsaidigitalcollective.co.uk/)
 
 Answer-first sections and trust signals are heuristics, so they warn at worst and never fail.
 
-**Performance:** the PageSpeed Insights mobile score, LCP, CLS and TBT, plus INP from real-user data where it exists.
+**Performance:** the PageSpeed Insights score, LCP, CLS and TBT, plus INP from real-user data where it exists, on Mobile and Desktop tabs. Both run in parallel. Only mobile counts towards the scores, because Google ranks the mobile version of a page; desktop is there for reference. The PDF prints both.
 
 **Fix list:** Claude turns every warning and failure into up to eight prioritised fixes. Each one has an effort level and an owner (client or developer).
 
@@ -50,7 +50,7 @@ Answer-first sections and trust signals are heuristics, so they warn at worst an
 | Setting | Needed for | Required? | Where to get it |
 |---|---|---|---|
 | Anthropic API key | The Claude-written fix list | Yes, for the fix list. The checks run without it | [console.anthropic.com](https://console.anthropic.com/) → API keys |
-| PageSpeed Insights API key | Mobile performance checks | No, but without it Google rate-limits requests heavily | Google Cloud Console → enable the PageSpeed Insights API → Credentials. It's free |
+| PageSpeed Insights API key | Mobile and desktop performance checks | No, but without it Google rate-limits requests heavily | Google Cloud Console → enable the PageSpeed Insights API → Credentials. It's free |
 | Claude model | Choosing the model | No. Defaults to `claude-haiku-4-5-20251001` | – |
 
 ### Option 1: Settings screen (quickest)

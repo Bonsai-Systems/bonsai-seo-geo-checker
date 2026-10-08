@@ -4,10 +4,10 @@ BONSAI SEO/GEO CHECKER — LLM INSTRUCTIONS
 WHAT IT IS
 Internal WordPress plugin by The Bonsai Digital Collective. It audits one URL for
 technical SEO, meta, content, social, structured data, AI visibility (GEO) and
-mobile performance (PageSpeed Insights), then asks Claude for a prioritised fix
+mobile and desktop performance (PageSpeed Insights), then asks Claude for a prioritised fix
 list. Admin page: Bonsai > SEO/GEO checker (admin.php?page=bsgc, Checker and
 Settings tabs, via the bundled Bonsai Hub in lib/bonsai-hub/). Capability: manage_options.
-Version 1.5.1. WP 6.2+, PHP 7.4+. Prefix: bsgc / BSGC_.
+Version 1.6.0. WP 6.2+, PHP 7.4+. Prefix: bsgc / BSGC_.
 Repo: https://github.com/Bonsai-Systems/bonsai-seo-geo-checker
 
 FILES
@@ -17,7 +17,7 @@ inc/class-bsgc-settings.php  Settings API page + BSGC_Settings::get()
 inc/class-bsgc-fetcher.php   wp_safe_remote_get wrapper (SSRF-safe)
 inc/class-bsgc-robots.php    RFC 9309 robots.txt parser
 inc/class-bsgc-analyser.php  all checks + score(); CATEGORIES, SEARCH_BOTS, TRAINING_BOTS
-inc/class-bsgc-pagespeed.php PSI v5 mobile
+inc/class-bsgc-pagespeed.php PSI v5 mobile/desktop (desktop unscored)
 inc/class-bsgc-ai.php        Anthropic Messages API, JSON fix list, sanitise()
 inc/class-bsgc-reports.php   hidden CPT bsgc_report
 inc/class-bsgc-admin.php     admin page + AJAX + run_url()/report_url()
@@ -28,7 +28,8 @@ AJAX ACTIONS (nonce "bsgc", manage_options)
 bsgc_run_check, bsgc_run_pagespeed, bsgc_run_ai, bsgc_get_report, bsgc_delete_report
 
 STORAGE (post meta on bsgc_report)
-_bsgc_report (base checks), _bsgc_performance, _bsgc_ai, _bsgc_score (cache),
+_bsgc_report (base checks), _bsgc_performance (mobile, scored),
+_bsgc_performance_desktop (reference only), _bsgc_ai, _bsgc_score (cache),
 _bsgc_post_id (post the page belongs to; from the editor or url_to_postid)
 
 ENTRY POINTS

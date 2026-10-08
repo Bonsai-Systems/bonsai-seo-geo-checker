@@ -14,8 +14,10 @@
 	var STATUS_ORDER = { fail: 0, warn: 1, pass: 2, info: 3 };
 	var EFFORT_LABELS = { quick: 'Quick fix', medium: 'Medium effort', involved: 'Involved' };
 	var OWNER_LABELS = { client: 'Client', developer: 'Developer' };
+	// PageSpeed strategies, in tab order. Mobile is scored; desktop is for reference.
+	var PERF_TABS = { mobile: 'Mobile', desktop: 'Desktop' };
 
-	var state = { report: null, perfPending: false, aiPending: false };
+	var state = newState( null );
 	var $form, $input, $button, $status, $report, $history;
 
 	/* ------------------------------------------------------------------
@@ -48,6 +50,15 @@
 		);
 	}
 
+	function newState( report ) {
+		return {
+			report: report,
+			perfPending: { mobile: false, desktop: false },
+			aiPending: false,
+			perfTab: 'mobile'
+		};
+	}
+
 	function setStatus( message, isError ) {
 		$status.text( message || '' ).toggleClass( 'is-error', !! isError );
 	}
@@ -57,7 +68,7 @@
 	}
 
 	function settle() {
-		if ( ! state.perfPending && ! state.aiPending ) {
+		if ( ! state.perfPending.mobile && ! state.perfPending.desktop && ! state.aiPending ) {
 			setStatus( 'Report complete.' );
 		}
 	}
@@ -95,7 +106,8 @@
 				state.report = data.report;
 				upsertHistoryRow( data.history );
 				setStatus( 'Checks done. PageSpeed and the fix list are still running.' );
-				runPerf();
+				runPerf( 'mobile' );
+				runPerf( 'desktop' );
 				if ( BSGC.hasAi ) {
 					runAi();
 				} else {
@@ -110,32 +122,47 @@
 			} );
 	}
 
-	function runPerf() {
+	/**
+	 * Run PageSpeed for one strategy. Mobile and desktop run in parallel and
+	 * save to separate meta keys server-side.
+	 */
+	function runPerf( strategy ) {
+		var desktop = 'desktop' === strategy;
+		var key = desktop ? 'desktop' : 'mobile';
 		var id = state.report.id;
-		state.perfPending = true;
+		state.perfPending[ key ] = true;
 		render();
 
-		request( 'bsgc_run_pagespeed', { id: id } )
+		request( 'bsgc_run_pagespeed', { id: id, strategy: key } )
 			.done( function ( data ) {
 				if ( ! isCurrent( id ) ) {
 					return;
 				}
+				// Desktop is unscored, so only its own block changes.
+				if ( desktop ) {
+					state.report.performance_desktop = data.report.performance_desktop;
+					return;
+				}
 				var ai = state.report.ai;
+				var desk = state.report.performance_desktop;
 				state.report = data.report;
-				// The fix list may have landed locally after the server read it.
+				// The fix list or desktop run may have landed locally after the server read them.
 				if ( ai && ! state.report.ai ) {
 					state.report.ai = ai;
+				}
+				if ( desk && 'none' !== desk.status ) {
+					state.report.performance_desktop = desk;
 				}
 				$history.find( 'tr[data-id="' + id + '"] .bsgc-history__score' ).text( state.report.scores.overall );
 			} )
 			.fail( function ( msg ) {
 				if ( isCurrent( id ) ) {
-					state.report.performance = { status: 'error', error: msg };
+					state.report[ desktop ? 'performance_desktop' : 'performance' ] = { status: 'error', error: msg };
 				}
 			} )
 			.always( function () {
 				if ( isCurrent( id ) ) {
-					state.perfPending = false;
+					state.perfPending[ key ] = false;
 					render();
 					settle();
 				}
@@ -334,7 +361,7 @@
 		}
 
 		var $side = $( '<div class="bsgc-score-wrap">' ).append( $rings );
-		if ( state.perfPending ) {
+		if ( state.perfPending.mobile ) {
 			$side.append( $( '<p class="bsgc-score-note">' ).text( 'Performance will be added when PageSpeed finishes.' ) );
 		}
 
@@ -418,19 +445,8 @@
 			}
 
 			if ( 'performance' === key ) {
-				var perf = r.performance || {};
-				if ( state.perfPending ) {
-					$wrap.append( $section.append( loading( 'Running PageSpeed Insights on mobile. Usually 20–40 seconds.' ) ) );
-					return;
-				}
-				if ( 'error' === perf.status ) {
-					$wrap.append( $section.append( $( '<p class="bsgc-error">' ).text( perf.error ), actionButton( 'Try again', runPerf ) ) );
-					return;
-				}
-				if ( ! checks.length ) {
-					$wrap.append( $section.append( actionButton( 'Run PageSpeed', runPerf ) ) );
-					return;
-				}
+				$wrap.append( renderPerformance( $section, r, checks ) );
+				return;
 			}
 
 			if ( ! checks.length ) {
@@ -441,6 +457,128 @@
 		} );
 
 		return $wrap;
+	}
+
+	/**
+	 * Performance panel with Mobile | Desktop tabs. Print shows both panels,
+	 * one after the other, and hides the tab bar.
+	 */
+	function renderPerformance( $section, r, mobileChecks ) {
+		var $tabs = $( '<div class="bsgc-perf-tabs" role="tablist">' ).attr( 'aria-label', 'PageSpeed results by device' );
+		var $panels = $();
+
+		$.each( PERF_TABS, function ( strategy, label ) {
+			var perf = ( 'desktop' === strategy ? r.performance_desktop : r.performance ) || {};
+			var checks = 'desktop' === strategy ? ( perf.checks || [] ) : mobileChecks;
+			var score = perf.metrics ? perf.metrics.score : null;
+			var selected = state.perfTab === strategy;
+			var tabId = 'bsgc-perf-tab-' + strategy;
+			var panelId = 'bsgc-perf-panel-' + strategy;
+
+			var $tab = $( '<button type="button" role="tab" class="bsgc-perf-tab">' )
+				.attr( {
+					id: tabId,
+					'aria-controls': panelId,
+					'aria-selected': selected ? 'true' : 'false',
+					tabindex: selected ? 0 : -1,
+					'data-strategy': strategy
+				} )
+				.append( $( '<span>' ).text( label ) );
+
+			if ( 'number' === typeof score && ! state.perfPending[ strategy ] ) {
+				$tab.append(
+					$( '<span class="screen-reader-text">' ).text( ', score' ),
+					$( '<span class="bsgc-perf-tab__score">' ).text( score )
+				);
+			}
+
+			var $panel = $( '<div role="tabpanel" class="bsgc-perf-panel">' )
+				.attr( { id: panelId, 'aria-labelledby': tabId, tabindex: 0 } )
+				.prop( 'hidden', ! selected )
+				.toggleClass( 'bsgc-perf-panel--empty', ! checks.length )
+				.append(
+					$( '<h4 class="bsgc-perf-panel__title bsgc-print-only">' ).text( label ),
+					renderPerfBody( strategy, label, perf, checks )
+				);
+
+			$tabs.append( $tab );
+			$panels = $panels.add( $panel );
+		} );
+
+		$tabs
+			.on( 'click', '.bsgc-perf-tab', function () {
+				selectPerfTab( $tabs, $( this ).data( 'strategy' ) );
+			} )
+			.on( 'keydown', '.bsgc-perf-tab', function ( e ) {
+				var $all = $tabs.find( '.bsgc-perf-tab' );
+				var i = $all.index( this );
+				var next;
+
+				switch ( e.key ) {
+					case 'ArrowRight':
+						next = ( i + 1 ) % $all.length;
+						break;
+					case 'ArrowLeft':
+						next = ( i - 1 + $all.length ) % $all.length;
+						break;
+					case 'Home':
+						next = 0;
+						break;
+					case 'End':
+						next = $all.length - 1;
+						break;
+					default:
+						return;
+				}
+
+				e.preventDefault();
+				selectPerfTab( $tabs, $all.eq( next ).data( 'strategy' ) );
+				$all.eq( next ).trigger( 'focus' );
+			} );
+
+		return $section.append( $tabs, $panels );
+	}
+
+	// Switch tabs in place (no re-render) so keyboard focus stays put.
+	function selectPerfTab( $tabs, strategy ) {
+		state.perfTab = strategy;
+
+		$tabs.find( '.bsgc-perf-tab' ).each( function () {
+			var on = $( this ).data( 'strategy' ) === strategy;
+			$( this ).attr( { 'aria-selected': on ? 'true' : 'false', tabindex: on ? 0 : -1 } );
+		} );
+
+		$tabs.siblings( '.bsgc-perf-panel' ).each( function () {
+			$( this ).prop( 'hidden', this.id !== 'bsgc-perf-panel-' + strategy );
+		} );
+	}
+
+	function renderPerfBody( strategy, label, perf, checks ) {
+		var run = function () {
+			runPerf( strategy );
+		};
+
+		if ( state.perfPending[ strategy ] ) {
+			return loading( 'Running PageSpeed Insights on ' + strategy + '. Usually 20–40 seconds.' );
+		}
+
+		if ( 'error' === perf.status ) {
+			return $( '<p class="bsgc-error">' ).text( perf.error ).add( actionButton( 'Try again', run ) );
+		}
+
+		if ( ! checks.length ) {
+			return actionButton( 'Run ' + label.toLowerCase() + ' test', run );
+		}
+
+		var $body = renderTable( checks );
+
+		if ( 'desktop' === strategy ) {
+			$body = $( '<p class="bsgc-perf-note">' )
+				.text( 'For reference only. The Performance score uses mobile, because Google ranks the mobile version of a page.' )
+				.add( $body );
+		}
+
+		return $body;
 	}
 
 	function renderTable( checks ) {
@@ -625,7 +763,7 @@
 		setStatus( 'Loading report…' );
 		request( 'bsgc_get_report', { id: id } )
 			.done( function ( data ) {
-				state = { report: data.report, perfPending: false, aiPending: false };
+				state = newState( data.report );
 				render();
 				setStatus( '' );
 				$report[ 0 ].scrollIntoView( { behavior: 'smooth', block: 'start' } );
@@ -645,7 +783,7 @@
 			.done( function () {
 				$row.remove();
 				if ( isCurrent( id ) ) {
-					state = { report: null, perfPending: false, aiPending: false };
+					state = newState( null );
 					render();
 				}
 				setStatus( 'Report deleted.' );

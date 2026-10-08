@@ -8,7 +8,7 @@ Decisions, gotchas and open items that aren't obvious from the code. Keep entrie
 - **2026-09-29 — Editor button opens the Tools screen rather than running inline.** This reuses the full report UI, history, PDF and summary without duplicating rendering, and avoids tying up the editor for 5–60s.
 - **2026-09-29 — Only published posts are checkable.** The fetch is unauthenticated, like a visitor or crawler, so drafts and private posts would 404.
 - **2026-09-29 — Three-step request flow.** Main checks run first, then PageSpeed and Claude run in parallel from JS. This keeps each request under host proxy timeouts and shows results sooner.
-- **2026-09-29 — Separate meta keys per part.** `_bsgc_report`, `_bsgc_performance`, `_bsgc_ai`, `_bsgc_score`. The parallel requests would otherwise overwrite each other.
+- **2026-09-29 — Separate meta keys per part.** `_bsgc_report`, `_bsgc_performance`, `_bsgc_performance_desktop` (added 1.6.0), `_bsgc_ai`, `_bsgc_score`. The parallel requests would otherwise overwrite each other.
 - **2026-09-29 — Scores recalculated on read.** `BSGC_Reports::get()` merges performance checks and re-scores; `_bsgc_score` is just a cache for the history table.
 - **2026-09-29 — Keys: constants first.** `wp-config.php` constants override the saved settings so keys can stay out of the database.
 - **2026-09-29 — Settings moved from ACF to the native Settings API.** This removes the ACF Pro dependency, so the page works on any client site. It also stops the key being printed into the page: ACF's password field puts the saved value in the `value` attribute. Old ACF values are migrated once and then deleted. It's an intentional exception to the "ACF everywhere" default.
@@ -19,6 +19,7 @@ Decisions, gotchas and open items that aren't obvious from the code. Keep entrie
 - **2026-10-02 — hreflang and LocalBusiness checks only appear when relevant.** Most Bonsai sites are single-language and many aren't local, so an unscored "not present" row would just be noise.
 - **2026-10-02 — PDF is the browser's print-to-PDF, not a server-side PDF library.** A cover page and a condensed passes list are rendered into the report as `.bsgc-print-only` blocks. Print CSS hides pass/info rows and categories with nothing to fix. No dependency, and the PDF always matches the on-screen report.
 - **2026-10-02 — Report branding is a setting, not hardcoded.** Bonsai white-labels for Realityhouse, SPS, Web Heads and others, so each install can use its own logo and "Prepared by" name, or none.
+- **2026-10-08 — Desktop PageSpeed is unscored.** Mobile and desktop run in parallel and are shown on tabs, but only mobile feeds the Performance and Overall scores, because Google indexes mobile-first. Desktop lives in its own meta key and is never merged into `checks`, so it also stays out of the cover counts and the Claude fix list. Each check now costs two PSI calls, so a PSI key matters more than before.
 - **2026-09-29 — Default model Haiku 4.5.** It's cheap enough for fix lists; override via `BSGC_CLAUDE_MODEL`.
 
 ## Gotchas

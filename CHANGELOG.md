@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-08
+
+### Added
+- **Desktop PageSpeed results.** The Performance section now has Mobile and Desktop tabs. Both PageSpeed runs start in parallel with the fix list, and each tab has its own loading state, score and "Try again" button. Tabs work with the keyboard (arrow keys, Home, End).
+- Desktop results are stored in a new `_bsgc_performance_desktop` meta key, so the parallel runs never overwrite each other. Reports saved before 1.6.0 show a **Run desktop test** button on the Desktop tab.
+- The PDF prints both mobile and desktop results, one after the other.
+
+### Changed
+- Only mobile counts towards the Performance and Overall scores, because Google ranks the mobile version of a page. Desktop is shown for reference and isn't sent to Claude.
+- `BSGC_PageSpeed::run()` takes a `$strategy` argument (`mobile` or `desktop`), and `bsgc_run_pagespeed` accepts a whitelisted `strategy` parameter (default `mobile`).
+- Each check now makes two PageSpeed Insights calls. Without an API key, Google's rate limit is more likely to kick in.
+
 ## [1.5.1] - 2026-10-08
 
 ### Fixed

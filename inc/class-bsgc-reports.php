@@ -17,6 +17,7 @@ class BSGC_Reports {
 	const CPT        = 'bsgc_report';
 	const META_BASE  = '_bsgc_report';
 	const META_PERF  = '_bsgc_performance';
+	const META_DESK  = '_bsgc_performance_desktop';
 	const META_AI    = '_bsgc_ai';
 	const META_SCORE = '_bsgc_score';
 	const META_POST  = '_bsgc_post_id';
@@ -81,14 +82,25 @@ class BSGC_Reports {
 	}
 
 	/**
-	 * Save PageSpeed or AI results.
+	 * Save PageSpeed or AI results. Each part has its own meta key because
+	 * mobile PSI, desktop PSI and AI all run in parallel.
 	 *
 	 * @param int    $id   Report ID.
-	 * @param string $part perf|ai.
+	 * @param string $part perf|perf_desktop|ai.
 	 * @param array  $data Data.
 	 */
 	public static function save_part( $id, $part, $data ) {
-		update_post_meta( $id, 'perf' === $part ? self::META_PERF : self::META_AI, wp_slash( $data ) );
+		$keys = array(
+			'perf'         => self::META_PERF,
+			'perf_desktop' => self::META_DESK,
+			'ai'           => self::META_AI,
+		);
+
+		if ( ! isset( $keys[ $part ] ) ) {
+			return;
+		}
+
+		update_post_meta( $id, $keys[ $part ], wp_slash( $data ) );
 
 		if ( 'perf' === $part ) {
 			$report = self::get( $id );
@@ -118,11 +130,15 @@ class BSGC_Reports {
 		}
 
 		$perf = get_post_meta( $id, self::META_PERF, true );
+		$desk = get_post_meta( $id, self::META_DESK, true );
 		$ai   = get_post_meta( $id, self::META_AI, true );
 
 		$report['id']          = $id;
 		$report['post_id']     = (int) get_post_meta( $id, self::META_POST, true );
 		$report['performance'] = is_array( $perf ) ? array_diff_key( $perf, array( 'checks' => 1 ) ) : array( 'status' => 'none' );
+
+		// Desktop keeps its checks to itself: shown for reference, never scored or sent to Claude.
+		$report['performance_desktop'] = is_array( $desk ) ? $desk : array( 'status' => 'none' );
 
 		if ( is_array( $perf ) && ! empty( $perf['checks'] ) ) {
 			$report['checks'] = array_merge( $report['checks'], $perf['checks'] );

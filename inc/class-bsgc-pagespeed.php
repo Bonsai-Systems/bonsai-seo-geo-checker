@@ -1,7 +1,10 @@
 <?php
 /**
- * PageSpeed Insights (mobile). Runs separately from the main checks because
- * it takes 20–60 seconds.
+ * PageSpeed Insights (mobile and desktop). Runs separately from the main
+ * checks because each run takes 20–60 seconds.
+ *
+ * Mobile is scored (Google indexes mobile-first). Desktop is shown for
+ * reference only and is kept out of the report's scored checks.
  *
  * @package BonsaiSEOGEOChecker
  */
@@ -16,15 +19,24 @@ class BSGC_PageSpeed {
 	const ENDPOINT = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
 
 	/**
-	 * Run a mobile performance test.
-	 *
-	 * @param string $url URL.
-	 * @return array|WP_Error { checks, metrics }
+	 * Supported PSI strategies. The first is the default.
 	 */
-	public static function run( $url ) {
+	const STRATEGIES = array( 'mobile', 'desktop' );
+
+	/**
+	 * Run a performance test.
+	 *
+	 * @param string $url      URL.
+	 * @param string $strategy mobile|desktop.
+	 * @return array|WP_Error { status, strategy, checks, metrics }
+	 */
+	public static function run( $url, $strategy = 'mobile' ) {
+		$strategy = in_array( $strategy, self::STRATEGIES, true ) ? $strategy : 'mobile';
+		$network  = 'mobile' === $strategy ? 'a throttled mobile connection' : 'a desktop connection';
+
 		$params = array(
 			'url'      => $url,
-			'strategy' => 'mobile',
+			'strategy' => $strategy,
 			'category' => 'performance',
 		);
 
@@ -70,11 +82,11 @@ class BSGC_PageSpeed {
 		$checks = array();
 
 		if ( null !== $score ) {
-			$checks[] = self::check( 'psi_score', 'Mobile performance score', self::grade( $score, 90, 50, true ), sprintf( 'Lighthouse mobile score %d/100. It\'s a lab test, so expect a few points\' variation between runs.', $score ), 4, $score . '/100', 'Work through the metrics below: the worst one is usually where the points are going.' );
+			$checks[] = self::check( 'psi_score', ucfirst( $strategy ) . ' performance score', self::grade( $score, 90, 50, true ), sprintf( 'Lighthouse %s score %d/100. It\'s a lab test, so expect a few points\' variation between runs.', $strategy, $score ), 4, $score . '/100', 'Work through the metrics below: the worst one is usually where the points are going.' );
 		}
 
 		if ( null !== $lcp ) {
-			$checks[] = self::check( 'lcp', 'Largest Contentful Paint', self::grade( $lcp, 2.5, 4 ), sprintf( 'Main content appears after %.1fs on a throttled mobile connection (good is 2.5s or less).', $lcp ), 2, '', 'Usually the hero image: compress it, serve WebP/AVIF and don\'t lazy-load it.' );
+			$checks[] = self::check( 'lcp', 'Largest Contentful Paint', self::grade( $lcp, 2.5, 4 ), sprintf( 'Main content appears after %.1fs on %s (good is 2.5s or less).', $lcp, $network ), 2, '', 'Usually the hero image: compress it, serve WebP/AVIF and don\'t lazy-load it.' );
 		}
 
 		if ( null !== $cls ) {
@@ -86,15 +98,16 @@ class BSGC_PageSpeed {
 		}
 
 		if ( null !== $inp ) {
-			$checks[] = self::check( 'inp', 'Interaction to Next Paint', self::grade( $inp, 200, 500 ), sprintf( 'Real Chrome users see %dms responsiveness (good is 200ms or less).', $inp ), 2, '', 'Cut heavy JavaScript that runs on clicks and taps, such as large event handlers, chat widgets and tag manager triggers.' );
+			$checks[] = self::check( 'inp', 'Interaction to Next Paint', self::grade( $inp, 200, 500 ), sprintf( 'Real Chrome users on %s see %dms responsiveness (good is 200ms or less).', $strategy, $inp ), 2, '', 'Cut heavy JavaScript that runs on clicks and taps, such as large event handlers, chat widgets and tag manager triggers.' );
 		} else {
-			$checks[] = self::check( 'inp', 'Real-user data', 'info', 'No real-user (Chrome UX Report) data. The site doesn\'t get enough Chrome traffic for field metrics, so the lab results above are all there is.', 0 );
+			$checks[] = self::check( 'inp', 'Real-user data', 'info', sprintf( 'No real-user (Chrome UX Report) data for %s. The site doesn\'t get enough Chrome traffic for field metrics, so the lab results above are all there is.', $strategy ), 0 );
 		}
 
 		return array(
-			'status'  => 'done',
-			'checks'  => $checks,
-			'metrics' => array(
+			'status'   => 'done',
+			'strategy' => $strategy,
+			'checks'   => $checks,
+			'metrics'  => array(
 				'score' => $score,
 				'lcp'   => $lcp,
 				'cls'   => $cls,
